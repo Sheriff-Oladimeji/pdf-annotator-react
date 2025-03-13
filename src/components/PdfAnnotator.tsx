@@ -7,8 +7,6 @@ import { useAnnotations } from '../hooks/useAnnotations';
 import { PDFAnnotatorProps, Annotation, AnnotationMode, Point } from '../types';
 import { AnnotationDetails } from './AnnotationDetails';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
 export const PdfAnnotator: React.FC<PDFAnnotatorProps> = ({
   url,
   annotations = [],
@@ -29,6 +27,7 @@ export const PdfAnnotator: React.FC<PDFAnnotatorProps> = ({
   drawingColor,
   textColor,
   commentColor,
+  pdfWorkerSrc,
 }) => {
   const [pdfDocument, setPdfDocument] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
@@ -36,6 +35,13 @@ export const PdfAnnotator: React.FC<PDFAnnotatorProps> = ({
   const [showCommentPopup, setShowCommentPopup] = useState<boolean>(false);
   const [commentPosition, setCommentPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Configure the PDF worker
+  useEffect(() => {
+    // Use the provided worker source or default to a CDN with HTTPS
+    const workerSrc = pdfWorkerSrc || `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+  }, [pdfWorkerSrc]);
   
   const {
     annotations: localAnnotations,

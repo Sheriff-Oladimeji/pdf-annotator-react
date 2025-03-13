@@ -1,11 +1,12 @@
 // Export main components
 export { PdfAnnotator } from './components/PdfAnnotator';
 
+// Export enums as values
+export { AnnotationMode, AnnotationType } from './types';
+
 // Export types
 export type {
   Annotation,
-  AnnotationType,
-  AnnotationMode,
   AnnotationRect,
   Point,
   AnnotationEventCallbacks,

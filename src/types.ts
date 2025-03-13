@@ -68,4 +68,5 @@ export type PDFAnnotatorProps = {
   drawingColor?: string;
   textColor?: string;
   commentColor?: string;
+  pdfWorkerSrc?: string;
 } & AnnotationEventCallbacks; 
