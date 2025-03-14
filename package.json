@@ -1,6 +1,6 @@
 {
   "name": "pdf-annotator-react",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "description": "A React component library for PDF annotation",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -54,10 +54,14 @@
     "@rollup/plugin-terser": "^0.4.4",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rollup": "^4.35.0",
+    "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-typescript2": "^0.35.0",
+    "tailwindcss": "^4.0.14",
     "typescript": "^5.2.2"
   }
 }

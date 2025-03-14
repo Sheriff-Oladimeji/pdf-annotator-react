@@ -33,17 +33,10 @@ export const CommentPopup: React.FC<CommentPopupProps> = ({
 
   return (
     <div
-      className="pdf-annotator-comment-popup"
+      className="absolute z-50 bg-white shadow-lg rounded-md p-3 min-w-[250px]"
       style={{
-        position: 'absolute',
         top: position.y,
         left: position.x,
-        zIndex: 1000,
-        backgroundColor: 'white',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
-        borderRadius: '4px',
-        padding: '10px',
-        minWidth: '250px',
       }}
     >
       <form onSubmit={handleSubmit}>
@@ -52,48 +45,19 @@ export const CommentPopup: React.FC<CommentPopupProps> = ({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Add a comment..."
-          style={{
-            width: '100%',
-            minHeight: '80px',
-            padding: '8px',
-            borderRadius: '4px',
-            border: '1px solid #ddd',
-            resize: 'vertical',
-            fontFamily: 'inherit',
-            fontSize: '14px',
-            marginBottom: '10px',
-          }}
+          className="w-full min-h-[80px] p-2 rounded-md border border-gray-300 resize-y font-inherit text-sm mb-3"
         />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '8px',
-          }}
-        >
+        <div className="flex justify-end space-x-2">
           <button
             type="button"
             onClick={onCancel}
-            style={{
-              padding: '6px 12px',
-              backgroundColor: '#f5f5f5',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
+            className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            style={{
-              padding: '6px 12px',
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
+            className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
           >
             Save
           </button>

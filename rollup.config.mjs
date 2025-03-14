@@ -3,6 +3,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from 'rollup-plugin-typescript2';
 import terser from '@rollup/plugin-terser';
 import babel from '@rollup/plugin-babel';
+import postcss from 'rollup-plugin-postcss';
 import { readFileSync } from 'fs';
 
 // Read package.json as a regular JSON file
@@ -27,6 +28,16 @@ export default {
   plugins: [
     resolve(),
     commonjs(),
+    postcss({
+      config: {
+        path: './postcss.config.js',
+      },
+      extensions: ['.css'],
+      minimize: true,
+      inject: {
+        insertAt: 'top',
+      },
+    }),
     typescript({
       tsconfig: './tsconfig.json',
       useTsconfigDeclarationDir: true,

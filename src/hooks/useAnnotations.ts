@@ -6,13 +6,20 @@ import {
   AnnotationType, 
   AnnotationRect, 
   Point,
+  ENEMCategory,
   AnnotationEventCallbacks
 } from '../types';
-import { annotationModeToType, calculateRectFromPoints, getAnnotationColor } from '../utils';
+import { 
+  annotationModeToType, 
+  calculateRectFromPoints, 
+  getAnnotationColor, 
+  getCategoryColor 
+} from '../utils';
 
 interface UseAnnotationsProps extends AnnotationEventCallbacks {
   initialAnnotations?: Annotation[];
   annotationMode?: AnnotationMode;
+  currentCategory?: ENEMCategory;
   highlightColor?: string;
   underlineColor?: string;
   strikeoutColor?: string;
@@ -20,11 +27,14 @@ interface UseAnnotationsProps extends AnnotationEventCallbacks {
   drawingColor?: string;
   textColor?: string;
   commentColor?: string;
+  pinColor?: string;
+  categoryColors?: Record<ENEMCategory, string>;
 }
 
 export const useAnnotations = ({
   initialAnnotations = [],
   annotationMode = AnnotationMode.NONE,
+  currentCategory,
   onAnnotationCreate,
   onAnnotationUpdate,
   onAnnotationDelete,
@@ -36,6 +46,8 @@ export const useAnnotations = ({
   drawingColor,
   textColor,
   commentColor,
+  pinColor,
+  categoryColors,
 }: UseAnnotationsProps) => {
   const [annotations, setAnnotations] = useState<Annotation[]>(initialAnnotations);
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
@@ -45,7 +57,13 @@ export const useAnnotations = ({
   const [startPoint, setStartPoint] = useState<Point | null>(null);
 
   const getColor = useCallback(
-    (type: AnnotationType): string => {
+    (type: AnnotationType, category?: ENEMCategory): string => {
+      // If a category is provided, use its color
+      if (category) {
+        return getCategoryColor(category, categoryColors);
+      }
+      
+      // Otherwise, fall back to the default color for the annotation type
       return getAnnotationColor(
         type,
         highlightColor,
@@ -54,7 +72,8 @@ export const useAnnotations = ({
         rectangleColor,
         drawingColor,
         textColor,
-        commentColor
+        commentColor,
+        pinColor
       );
     },
     [
@@ -65,6 +84,8 @@ export const useAnnotations = ({
       drawingColor,
       textColor,
       commentColor,
+      pinColor,
+      categoryColors
     ]
   );
 
@@ -80,10 +101,11 @@ export const useAnnotations = ({
         type,
         rect,
         pageIndex: rect.pageIndex,
-        color: getColor(type),
+        color: getColor(type, currentCategory),
         content,
         points,
         createdAt: new Date(),
+        category: currentCategory, // Add the current category to the annotation
       };
 
       setAnnotations((prev) => {
@@ -92,7 +114,7 @@ export const useAnnotations = ({
       onAnnotationCreate?.(newAnnotation);
       return newAnnotation;
     },
-    [getColor, onAnnotationCreate]
+    [getColor, onAnnotationCreate, currentCategory]
   );
 
   const updateAnnotation = useCallback(

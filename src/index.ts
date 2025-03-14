@@ -1,26 +1,40 @@
-// Export main components
+// Import the Tailwind CSS styles
+import './styles/tailwind.css';
+
+// Components
 export { PdfAnnotator } from './components/PdfAnnotator';
+export { PdfPage } from './components/PdfPage';
+export { AnnotationLayer } from './components/AnnotationLayer';
+export { ToolBar } from './components/ToolBar';
+export { AnnotationDetails } from './components/AnnotationDetails';
+export { CommentPopup } from './components/CommentPopup';
 
-// Export enums as values
-export { AnnotationMode, AnnotationType } from './types';
+// Hooks
+export { useAnnotations } from './hooks/useAnnotations';
 
-// Export types
+// Types
+export { AnnotationType, AnnotationMode, ENEMCategory } from './types';
 export type {
-  Annotation,
-  AnnotationRect,
   Point,
+  AnnotationRect,
+  Annotation,
   AnnotationEventCallbacks,
   PDFAnnotatorProps,
 } from './types';
 
-// Export utilities
+// Utils
 export {
   createAnnotation,
   getAnnotationColor,
   annotationModeToType,
   calculateRectFromPoints,
   pointsToSvgPath,
+  DEFAULT_CATEGORY_COLORS,
+  getCategoryColor,
+  getCategoryDisplayName,
+  annotationsToJSON,
 } from './utils';
 
-// Export hooks
-export { useAnnotations } from './hooks/useAnnotations'; 
+// Example component for ENEM annotation
+// Uncomment when the example file is properly created
+// export { default as ENEMAnnotationExample } from './examples/ENEMAnnotationExample'; 
