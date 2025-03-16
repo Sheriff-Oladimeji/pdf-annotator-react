@@ -30,13 +30,15 @@ export default {
     commonjs(),
     postcss({
       config: {
-        path: './postcss.config.js',
+        path: './postcss.config.mjs',
       },
       extensions: ['.css'],
       minimize: true,
       inject: {
         insertAt: 'top',
       },
+      modules: false,
+      extract: false,
     }),
     typescript({
       tsconfig: './tsconfig.json',

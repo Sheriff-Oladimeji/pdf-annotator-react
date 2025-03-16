@@ -52,6 +52,32 @@ export const ToolBar: React.FC<ToolBarProps> = ({
     <div className="w-full bg-gray-100 border-b border-gray-300 shadow-sm">
       {/* Main toolbar with essential tools */}
       <div className="flex flex-wrap items-center justify-between px-4 py-2 border-b border-gray-200">
+      <div className="flex items-center space-x-4">
+          {/* Category selector dropdown */}
+          <div className="relative">
+            <select
+              value={currentCategory || ''}
+              onChange={handleCategoryChange}
+              className="appearance-none bg-white border border-gray-300 rounded-md py-1.5 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{
+                borderBottom: currentCategory ? `3px solid ${categoryColors?.[currentCategory] || 'transparent'}` : undefined
+              }}
+            >
+              <option value="">Select Category</option>
+              {Object.values(ENEMCategory).map((category) => (
+                <option key={category} value={category}>
+                  {getCategoryDisplayName(category)}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
         <div className="flex items-center space-x-2">
           <button
             className={`p-2 rounded-md border border-gray-300 ${
@@ -157,7 +183,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             <select
               value={currentCategory || ''}
               onChange={handleCategoryChange}
-              className="appearance-none bg-white border border-gray-300 rounded-md py-1.5 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="appearance-none bg-white border border-gray-300 rounded-md py-1.5 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-16"
               style={{
                 borderBottom: currentCategory ? `3px solid ${categoryColors?.[currentCategory] || 'transparent'}` : undefined
               }}

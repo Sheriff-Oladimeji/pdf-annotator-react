@@ -127,15 +127,15 @@ export const getCategoryColor = (
 export const getCategoryDisplayName = (category: ENEMCategory): string => {
   switch (category) {
     case ENEMCategory.COMPETENCIA1:
-      return 'Competência 1 - Domínio da norma padrão';
+      return 'C1 - Domínio da norma padrão';
     case ENEMCategory.COMPETENCIA2:
-      return 'Competência 2 - Compreensão da proposta';
+      return 'C2 - Compreensão da proposta';
     case ENEMCategory.COMPETENCIA3:
-      return 'Competência 3 - Argumentação';
+      return 'C3 - Argumentação';
     case ENEMCategory.COMPETENCIA4:
-      return 'Competência 4 - Mecanismos linguísticos';
+      return 'C4 - Mecanismos linguísticos';
     case ENEMCategory.COMPETENCIA5:
-      return 'Competência 5 - Proposta de intervenção';
+      return 'C5 - Proposta de intervenção';
     default:
       return 'Desconhecido';
   }
