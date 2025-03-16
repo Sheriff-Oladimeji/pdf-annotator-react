@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced AnnotationDetails component to properly display category colors throughout the UI
   - Added color indicator for category selection
   - Applied category color to various UI elements (buttons, borders, etc.)
+- Type issues related to custom categories implementation
+  - Added TypeScript type guard to properly handle CategoryType values
+  - Updated ToolBar component to work with both ENEMCategory and custom categories
+  - Fixed type compatibility issues in component props to ensure type safety
 
 ## [0.1.20] - 2024-07-16
 
