@@ -6,7 +6,7 @@ import { CommentPopup } from './CommentPopup';
 import { TextInputPopup } from './TextInputPopup';
 import { PinPopup } from './PinPopup';
 import { useAnnotations } from '../hooks/useAnnotations';
-import { PDFAnnotatorProps, Annotation, AnnotationMode, Point, ENEMCategory, AnnotationType, TagInterface } from '../types';
+import { PDFAnnotatorProps, Annotation, AnnotationMode, Point, ENEMCategory, AnnotationType, TagInterface, CategoryType } from '../types';
 import { AnnotationDetails } from './AnnotationDetails';
 import { annotationsToJSON, DEFAULT_CATEGORY_COLORS } from '../utils';
 import { AnnotationLayer } from './AnnotationLayer';
@@ -39,14 +39,17 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   textColor,
   commentColor,
   pinColor = 'rgba(249, 115, 22, 0.7)', // Default orange
-  categoryColors = DEFAULT_CATEGORY_COLORS,
+  categoryColors = {} as Record<string, string>,
+  customCategories = [],
   availableTags = [],
   pdfWorkerSrc,
+  fitToWidth = true, // New prop to control whether to fit to width
 }, ref) => {
   const [pdfDocument, setPdfDocument] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(pageNumber);
   const [scale, setScale] = useState<number>(initialScale);
+  const [originalPageWidth, setOriginalPageWidth] = useState<number | null>(null);
   const [showCommentPopup, setShowCommentPopup] = useState<boolean>(false);
   const [commentPosition, setCommentPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showTextPopup, setShowTextPopup] = useState<boolean>(false);
@@ -55,7 +58,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const [showPinPopup, setShowPinPopup] = useState<boolean>(false);
   const [pinPosition, setPinPosition] = useState<Point>({ x: 0, y: 0 });
   const [pinPageIndex, setPinPageIndex] = useState<number>(0);
-  const [selectedENEMCategory, setSelectedENEMCategory] = useState<ENEMCategory | undefined>(currentCategory);
+  const [selectedENEMCategory, setSelectedENEMCategory] = useState<CategoryType | undefined>(currentCategory);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedAnnotationPosition, setSelectedAnnotationPosition] = useState<{ x: number, y: number } | null>(null);
   const [isNewAnnotation, setIsNewAnnotation] = useState(false);
@@ -67,6 +70,31 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     const workerSrc = pdfWorkerSrc || `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
   }, [pdfWorkerSrc]);
+  
+  // Calculate the scale factor needed to fit the PDF to the container width
+  const calculateFitToWidthScale = async (pdfDoc: pdfjsLib.PDFDocumentProxy) => {
+    if (!containerRef.current) return initialScale;
+    
+    try {
+      // Get the first page to determine dimensions
+      const page = await pdfDoc.getPage(1);
+      const viewport = page.getViewport({ scale: 1.0 }); // Get original size
+      
+      // Store the original page width
+      setOriginalPageWidth(viewport.width);
+      
+      // Calculate container width (accounting for padding)
+      const containerWidth = containerRef.current.clientWidth - 40; // 40px for padding (20px on each side)
+      
+      // Calculate scale needed to fit the page width to the container
+      const scaleFactor = containerWidth / viewport.width;
+      
+      return scaleFactor;
+    } catch (error) {
+      console.error('Error calculating fit-to-width scale:', error);
+      return initialScale;
+    }
+  };
   
   // Modified onAnnotationCreate to capture the position when a new annotation is created
   const handleAnnotationCreate = (newAnnotation: Annotation) => {
@@ -118,6 +146,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     commentColor,
     pinColor,
     categoryColors,
+    customCategories,
   });
 
   // Track mouse position for all pointer events
@@ -154,6 +183,12 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         setPdfDocument(pdfDoc);
         setNumPages(pdfDoc.numPages);
         
+        // If fitToWidth is enabled, calculate and set the appropriate scale
+        if (fitToWidth) {
+          const fitScale = await calculateFitToWidthScale(pdfDoc);
+          setScale(fitScale);
+        }
+        
         if (onDocumentLoadSuccess) {
           onDocumentLoadSuccess(pdfDoc.numPages);
         }
@@ -163,7 +198,23 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     };
 
     loadDocument();
-  }, [url, onDocumentLoadSuccess]);
+  }, [url, onDocumentLoadSuccess, fitToWidth, initialScale]);
+
+  // Recalculate scale when window is resized
+  useEffect(() => {
+    const handleResize = async () => {
+      if (fitToWidth && pdfDocument && originalPageWidth && containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth - 40; // 40px for padding
+        const newScale = containerWidth / originalPageWidth;
+        setScale(newScale);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [fitToWidth, pdfDocument, originalPageWidth]);
 
   useEffect(() => {
     setMode(annotationMode);
@@ -203,7 +254,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     }
   };
 
-  const handleCategoryChange = (category: ENEMCategory) => {
+  const handleCategoryChange = (category: CategoryType) => {
     setSelectedENEMCategory(category);
     
     if (onCategoryChange) {
@@ -383,8 +434,21 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   // Helper function to get the color for a specific annotation type
   const getAnnotationTypeColor = (type: AnnotationType): string => {
     // If we have a selected category, use its color
-    if (selectedENEMCategory && categoryColors) {
-      return categoryColors[selectedENEMCategory];
+    if (selectedENEMCategory) {
+      if (customCategories) {
+        const customCategory = customCategories.find(c => c.id === selectedENEMCategory);
+        if (customCategory) {
+          return customCategory.color;
+        }
+      }
+      
+      // Check if it's a built-in category
+      if (categoryColors && typeof categoryColors === 'object') {
+        const catKey = String(selectedENEMCategory);
+        if (catKey in categoryColors) {
+          return categoryColors[catKey];
+        }
+      }
     }
     
     // Otherwise use the default color based on annotation type
@@ -410,6 +474,12 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     }
   };
 
+  // Helper function to check if a CategoryType is an ENEMCategory
+  const isENEMCategory = (category: CategoryType | undefined): category is ENEMCategory | undefined => {
+    if (!category) return true; // undefined is valid for both types
+    return Object.values(ENEMCategory).includes(category as ENEMCategory);
+  };
+
   return (
     <div className="pdf-annotator bg-gray-100 min-h-screen">
       <ToolBar
@@ -418,9 +488,9 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         currentPage={currentPage}
         numPages={numPages}
         onPageChange={handlePageChange}
-        currentCategory={selectedENEMCategory}
+        currentCategory={isENEMCategory(selectedENEMCategory) ? selectedENEMCategory : undefined}
         onCategoryChange={handleCategoryChange}
-        categoryColors={categoryColors}
+        categoryColors={categoryColors as Record<string, string>}
         scale={scale}
         onScaleChange={handleScaleChange}
       />
@@ -439,6 +509,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
           onDelete={deleteAnnotation}
           position={selectedAnnotationPosition || undefined}
           isNew={isNewAnnotation}
+          customCategories={customCategories}
+          categoryColors={categoryColors}
         />
       )}
 

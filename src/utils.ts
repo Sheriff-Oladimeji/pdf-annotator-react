@@ -1,4 +1,4 @@
-import { Annotation, AnnotationMode, AnnotationRect, AnnotationType, Point, ENEMCategory } from './types';
+import { Annotation, AnnotationMode, AnnotationRect, AnnotationType, Point, ENEMCategory, CategoryItem, CategoryType } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 export const createAnnotation = (
@@ -111,34 +111,69 @@ export const DEFAULT_CATEGORY_COLORS: Record<ENEMCategory, string> = {
   [ENEMCategory.COMPETENCIA5]: 'rgba(112, 48, 160, 0.7)',  // Purple
 };
 
-// Get color based on category
+// Get color based on category - now supports custom categories
 export const getCategoryColor = (
-  category: ENEMCategory | undefined,
-  categoryColors?: Record<ENEMCategory, string>
+  category: CategoryType | undefined,
+  categoryColors?: Record<string, string>,
+  customCategories?: CategoryItem[]
 ): string => {
   if (!category) return 'rgba(0, 0, 0, 1)';
   
-  return (categoryColors && categoryColors[category]) || 
-         DEFAULT_CATEGORY_COLORS[category] || 
-         'rgba(0, 0, 0, 1)';
+  // First check if a custom color is provided in categoryColors
+  if (categoryColors && categoryColors[category]) {
+    return categoryColors[category];
+  }
+  
+  // Then check if this is a custom category with a color
+  if (customCategories) {
+    const customCategory = customCategories.find(c => c.id === category);
+    if (customCategory) {
+      return customCategory.color;
+    }
+  }
+  
+  // Finally, try the default ENEM categories
+  if (Object.values(ENEMCategory).includes(category as ENEMCategory)) {
+    return DEFAULT_CATEGORY_COLORS[category as ENEMCategory];
+  }
+  
+  // Default fallback
+  return 'rgba(0, 0, 0, 1)';
 };
 
-// Get category name for display
-export const getCategoryDisplayName = (category: ENEMCategory): string => {
-  switch (category) {
-    case ENEMCategory.COMPETENCIA1:
-      return 'C1 - Domínio da norma padrão';
-    case ENEMCategory.COMPETENCIA2:
-      return 'C2 - Compreensão da proposta';
-    case ENEMCategory.COMPETENCIA3:
-      return 'C3 - Argumentação';
-    case ENEMCategory.COMPETENCIA4:
-      return 'C4 - Mecanismos linguísticos';
-    case ENEMCategory.COMPETENCIA5:
-      return 'C5 - Proposta de intervenção';
-    default:
-      return 'Desconhecido';
+// Get category display name - now supports custom categories
+export const getCategoryDisplayName = (
+  category: CategoryType,
+  customCategories?: CategoryItem[]
+): string => {
+  // First check if it's a custom category
+  if (customCategories) {
+    const customCategory = customCategories.find(c => c.id === category);
+    if (customCategory) {
+      return customCategory.displayName;
+    }
   }
+  
+  // Then check if it's a default ENEM category
+  if (Object.values(ENEMCategory).includes(category as ENEMCategory)) {
+    switch (category as ENEMCategory) {
+      case ENEMCategory.COMPETENCIA1:
+        return 'C1 - Domínio da norma padrão';
+      case ENEMCategory.COMPETENCIA2:
+        return 'C2 - Compreensão da proposta';
+      case ENEMCategory.COMPETENCIA3:
+        return 'C3 - Argumentação';
+      case ENEMCategory.COMPETENCIA4:
+        return 'C4 - Mecanismos linguísticos';
+      case ENEMCategory.COMPETENCIA5:
+        return 'C5 - Proposta de intervenção';
+      default:
+        return 'Desconhecido';
+    }
+  }
+  
+  // Fallback to the category id
+  return String(category);
 };
 
 // Format annotations to JSON

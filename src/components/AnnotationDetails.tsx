@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Annotation, AnnotationType, ENEMCategory, TagInterface } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Annotation, AnnotationType, ENEMCategory, TagInterface, CategoryItem, CategoryType } from '../types';
 import { getCategoryDisplayName, getCategoryColor, DEFAULT_CATEGORY_COLORS } from '../utils';
 import { IoClose, IoSave, IoTrash, IoPencil, IoArrowBack } from 'react-icons/io5';
 
@@ -10,6 +10,8 @@ interface AnnotationDetailsProps {
   onClose: () => void;
   position?: { x: number, y: number }; // Optional position for the dialog
   isNew?: boolean; // Flag to indicate if this is a newly created annotation
+  customCategories?: CategoryItem[]; // Add customCategories prop
+  categoryColors?: Record<string, string>; // Add categoryColors prop
 }
 
 export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
@@ -19,13 +21,22 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   onClose,
   position,
   isNew = false,
+  customCategories = [],
+  categoryColors = {},
 }) => {
   const [isEditing, setIsEditing] = useState(isNew);
   const [content, setContent] = useState(annotation.content || '');
-  const [selectedCategory, setSelectedCategory] = useState<ENEMCategory | undefined>(
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType | undefined>(
     annotation.category
   );
   const [tags, setTags] = useState<TagInterface[]>(annotation.tags || []);
+
+  // Calculate category color using custom categories
+  const categoryColor = useMemo(() => {
+    // Use the selected category in edit mode, otherwise use the annotation's category
+    const categoryToUse = isEditing ? selectedCategory : annotation.category;
+    return getCategoryColor(categoryToUse, categoryColors, customCategories);
+  }, [annotation.category, selectedCategory, isEditing, categoryColors, customCategories]);
 
   // Update local state when annotation prop changes
   useEffect(() => {
@@ -35,28 +46,26 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
     setTags(annotation.tags || []);
   }, [annotation, annotation.content, annotation.category, annotation.tags]);
 
-  // Log when component updates with isNew flag
-  useEffect(() => {
-    console.log('AnnotationDetails rendered:', { 
-      id: annotation.id, 
-      isNew, 
-      position, 
-      isEditing 
-    });
-  }, [annotation.id, isNew, position, isEditing]);
+  // Get all available categories (combination of default ENEM and custom categories)
+  const allCategories = useMemo(() => {
+    // Start with the default ENEM categories
+    const enemCategories = Object.values(ENEMCategory).map(id => ({ 
+      id,
+      displayName: getCategoryDisplayName(id, customCategories)
+    }));
+    
+    // Merge with custom categories, avoiding duplicates
+    const customCats = customCategories.filter(
+      c => !Object.values(ENEMCategory).includes(c.id as ENEMCategory)
+    );
+    
+    return [...enemCategories, ...customCats];
+  }, [customCategories]);
 
   const handleSave = () => {
-    console.log('Saving annotation changes:', {
-      id: annotation.id,
-      color: getCategoryColor(selectedCategory),
-      content,
-      category: selectedCategory,
-      tags
-    });
-    
     onUpdate(annotation.id, { 
       content,
-      color: getCategoryColor(selectedCategory),
+      color: getCategoryColor(selectedCategory, categoryColors, customCategories),
       category: selectedCategory,
       tags
     });
@@ -93,6 +102,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         right: position ? 'auto' : '20px',
         left: position ? `${position.x}px` : 'auto',
         transform: position ? 'translate(-50%, 0)' : 'none',
+        borderTop: categoryColor ? `4px solid ${categoryColor}` : undefined,
       }}
     >
       <div
@@ -100,6 +110,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
       >
         <h3
           className="m-0 text-base font-bold"
+          style={{ color: categoryColor || 'inherit' }}
         >
           Anotação
         </h3>
@@ -119,7 +130,17 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         </p>
         {annotation.category && (
           <p>
-            <strong>Categoria:</strong> {getCategoryDisplayName(annotation.category)}
+            <strong>Categoria:</strong> 
+            <span 
+              className="ml-1 px-2 py-0.5 rounded inline-block"
+              style={{ 
+                backgroundColor: getCategoryColor(annotation.category, categoryColors, customCategories),
+                color: 'white',
+                fontSize: '0.9em'
+              }}
+            >
+              {getCategoryDisplayName(annotation.category, customCategories)}
+            </span>
           </p>
         )}
         <p>
@@ -146,13 +167,26 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             <select
               id="category-select"
               value={selectedCategory || ''}
-              onChange={(e) => setSelectedCategory(e.target.value as ENEMCategory)}
+              onChange={(e) => setSelectedCategory(e.target.value as CategoryType)}
               className="w-full p-2 border border-gray-300 rounded-md mb-2.5"
+              style={{ 
+                borderLeftWidth: '4px',
+                borderLeftColor: categoryColor || 'transparent'
+              }}
             >
               <option value="">Sem Categoria</option>
-              {Object.values(ENEMCategory).map((category) => (
-                <option key={category} value={category}>
-                  {getCategoryDisplayName(category)}
+              {allCategories.map((category) => (
+                <option 
+                  key={category.id} 
+                  value={category.id}
+                  style={{
+                    backgroundColor: category.id === selectedCategory ? 
+                      getCategoryColor(category.id, categoryColors, customCategories) : 
+                      'transparent',
+                    color: category.id === selectedCategory ? 'white' : 'inherit'
+                  }}
+                >
+                  {category.displayName}
                 </option>
               ))}
             </select>
@@ -166,6 +200,10 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md min-h-[80px] mb-2.5 resize-y"
+            style={{ 
+              borderColor: categoryColor ? `${categoryColor}40` : 'rgb(209, 213, 219)',
+              boxShadow: categoryColor ? `0 0 0 1px ${categoryColor}20` : 'none'
+            }}
           />
           <div
             className="flex justify-end space-x-2"
@@ -179,7 +217,8 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             </button>
             <button
               onClick={handleSave}
-              className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
+              className="px-3 py-1.5 text-white rounded-md hover:opacity-90 transition-colors flex items-center"
+              style={{ backgroundColor: categoryColor || '#3b82f6' }}
             >
               <IoSave className="mr-1" size={16} />
               Salvar
@@ -200,7 +239,11 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                       {typeTags.map((tag) => (
                         <span 
                           key={tag._id || `${tag.tipo}-${tag.tag}`} 
-                          className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
+                          className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium"
+                          style={{ 
+                            backgroundColor: `${categoryColor}20` || 'rgba(219, 234, 254, 1)',
+                            color: categoryColor || 'rgb(30, 64, 175)'
+                          }}
                         >
                           {tag.tag}
                         </span>
@@ -234,7 +277,8 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             </button>
             <button
               onClick={() => setIsEditing(true)}
-              className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
+              className="px-3 py-1.5 text-white rounded-md hover:opacity-90 transition-colors flex items-center"
+              style={{ backgroundColor: categoryColor || '#3b82f6' }}
             >
               <IoPencil className="mr-1" size={16} />
               Editar

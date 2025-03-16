@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnnotationMode, ENEMCategory } from '../types';
+import { AnnotationMode, ENEMCategory, CategoryType } from '../types';
 import { getCategoryDisplayName } from '../utils';
 import { 
   IoHandRightOutline, 
@@ -26,9 +26,9 @@ interface ToolBarProps {
   currentPage: number;
   numPages: number;
   onPageChange: (page: number) => void;
-  currentCategory?: ENEMCategory;
-  onCategoryChange?: (category: ENEMCategory) => void;
-  categoryColors?: Record<ENEMCategory, string>;
+  currentCategory?: CategoryType;
+  onCategoryChange?: (category: CategoryType) => void;
+  categoryColors?: Record<string, string>;
   scale: number;
   onScaleChange: (scale: number) => void;
 }
@@ -61,7 +61,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
 
   // Handle category change
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as ENEMCategory;
+    const value = e.target.value as CategoryType;
     onCategoryChange?.(value);
   };
 

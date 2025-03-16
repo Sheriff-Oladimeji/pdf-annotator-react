@@ -22,6 +22,7 @@ export enum AnnotationType {
   PIN = 'pin',
 }
 
+// Default ENEM categories - keep for backward compatibility
 export enum ENEMCategory {
   COMPETENCIA1 = 'competencia1', // Demonstrar domínio da norma padrão da língua escrita
   COMPETENCIA2 = 'competencia2', // Compreender a proposta de redação e aplicar conceitos das várias áreas de conhecimento
@@ -30,6 +31,15 @@ export enum ENEMCategory {
   COMPETENCIA5 = 'competencia5', // Elaborar proposta de intervenção para o problema abordado, respeitando os direitos humanos
 }
 
+// Generic category item interface for custom categories
+export interface CategoryItem {
+  id: string;
+  displayName: string;
+  color: string;
+}
+
+// Type for either ENEMCategory or custom category string ID
+export type CategoryType = ENEMCategory | string;
 
 export type Annotation = {
   id: string;
@@ -42,7 +52,7 @@ export type Annotation = {
   updatedAt?: Date;
   author?: string;
   points?: Point[];
-  category?: ENEMCategory;
+  category?: CategoryType; // Updated to accept either ENEMCategory or custom category
   tags?: TagInterface[];
 };
 
@@ -74,8 +84,9 @@ export type PDFAnnotatorProps = {
   onPageChange?: (pageNumber: number) => void;
   annotationMode?: AnnotationMode;
   onAnnotationModeChange?: (mode: AnnotationMode) => void;
-  currentCategory?: ENEMCategory;
-  onCategoryChange?: (category: ENEMCategory) => void;
+  currentCategory?: CategoryType;
+  onCategoryChange?: (category: CategoryType) => void;
+  customCategories?: CategoryItem[]; // New prop to pass custom categories
   highlightColor?: string;
   underlineColor?: string;
   strikeoutColor?: string;
@@ -84,9 +95,10 @@ export type PDFAnnotatorProps = {
   textColor?: string;
   commentColor?: string;
   pinColor?: string;
-  categoryColors?: Record<ENEMCategory, string>;
+  categoryColors?: Record<string, string>; // Updated to accept any string key
   availableTags?: CompetenciaInterface[];
   pdfWorkerSrc?: string;
+  fitToWidth?: boolean;
 } & AnnotationEventCallbacks; 
 
 

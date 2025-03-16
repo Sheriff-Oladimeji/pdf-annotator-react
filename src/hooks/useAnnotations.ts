@@ -7,7 +7,9 @@ import {
   AnnotationRect, 
   Point,
   ENEMCategory,
-  AnnotationEventCallbacks
+  AnnotationEventCallbacks,
+  CategoryType,
+  CategoryItem
 } from '../types';
 import { 
   annotationModeToType, 
@@ -19,7 +21,7 @@ import {
 interface UseAnnotationsProps extends AnnotationEventCallbacks {
   initialAnnotations?: Annotation[];
   annotationMode?: AnnotationMode;
-  currentCategory?: ENEMCategory;
+  currentCategory?: CategoryType;
   highlightColor?: string;
   underlineColor?: string;
   strikeoutColor?: string;
@@ -28,7 +30,8 @@ interface UseAnnotationsProps extends AnnotationEventCallbacks {
   textColor?: string;
   commentColor?: string;
   pinColor?: string;
-  categoryColors?: Record<ENEMCategory, string>;
+  categoryColors?: Record<string, string>;
+  customCategories?: CategoryItem[];
 }
 
 export const useAnnotations = ({
@@ -48,6 +51,7 @@ export const useAnnotations = ({
   commentColor,
   pinColor,
   categoryColors,
+  customCategories = [],
 }: UseAnnotationsProps) => {
   const [annotations, setAnnotations] = useState<Annotation[]>(initialAnnotations);
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
@@ -57,10 +61,10 @@ export const useAnnotations = ({
   const [startPoint, setStartPoint] = useState<Point | null>(null);
 
   const getColor = useCallback(
-    (type: AnnotationType, category?: ENEMCategory): string => {
+    (type: AnnotationType, category?: CategoryType): string => {
       // If a category is provided, use its color
       if (category) {
-        return getCategoryColor(category, categoryColors);
+        return getCategoryColor(category, categoryColors, customCategories);
       }
       
       // Otherwise, fall back to the default color for the annotation type
@@ -85,7 +89,8 @@ export const useAnnotations = ({
       textColor,
       commentColor,
       pinColor,
-      categoryColors
+      categoryColors,
+      customCategories
     ]
   );
 
