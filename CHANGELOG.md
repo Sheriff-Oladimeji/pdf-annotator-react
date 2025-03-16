@@ -5,6 +5,34 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.23] - 2024-07-16
+
+### Added
+- Version management scripts to automate release process
+  - Added `scripts/increment-version.js` to automatically increment version numbers
+  - Added npm scripts for patch, minor, and major version updates
+  - Added combined scripts for version increment and publishing in one command
+  - Created documentation in `scripts/README.md` with usage instructions
+
+### Changed
+- Improved developer workflow with automated versioning
+  - Simplified release process with one-command publish scripts
+  - Automatic CHANGELOG.md entry creation with templates
+
+### Fixed
+- No bug fixes in this release
+
+## [0.1.22] - 2024-07-16
+
+### Added
+- New AnnotationMode.HIGHLIGHTING for free-form highlighting with marker-like effect
+  - Added a new tool button with a marker icon
+  - Highlighting has thicker strokes (10px) with rounded caps and joins for a smoother look
+  - Uses translucent yellow color by default for a highlighting pen effect
+
+### Changed
+- Doubled the thickness of the drawing tool from 2px to 4px for better visibility
+
 ## [0.1.21] - 2024-07-16
 
 ### Added
