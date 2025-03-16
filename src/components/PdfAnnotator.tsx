@@ -58,6 +58,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const [selectedENEMCategory, setSelectedENEMCategory] = useState<ENEMCategory | undefined>(currentCategory);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedAnnotationPosition, setSelectedAnnotationPosition] = useState<{ x: number, y: number } | null>(null);
+  const [isNewAnnotation, setIsNewAnnotation] = useState(false);
+  const [lastMousePosition, setLastMousePosition] = useState<{ x: number, y: number } | null>(null);
   
   // Configure the PDF worker
   useEffect(() => {
@@ -65,6 +67,25 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     const workerSrc = pdfWorkerSrc || `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
   }, [pdfWorkerSrc]);
+  
+  // Modified onAnnotationCreate to capture the position when a new annotation is created
+  const handleAnnotationCreate = (newAnnotation: Annotation) => {
+    // Select the new annotation to display details
+    selectAnnotation(newAnnotation);
+    
+    // Set position for the details dialog to last mouse position
+    if (lastMousePosition) {
+      setSelectedAnnotationPosition(lastMousePosition);
+    }
+    
+    // Set isNewAnnotation flag to true so details opens in edit mode
+    setIsNewAnnotation(true);
+    
+    // Call the original onAnnotationCreate callback
+    if (onAnnotationCreate) {
+      onAnnotationCreate(newAnnotation);
+    }
+  };
   
   const {
     annotations: localAnnotations,
@@ -84,7 +105,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     initialAnnotations: annotations,
     annotationMode,
     currentCategory: selectedENEMCategory,
-    onAnnotationCreate,
+    onAnnotationCreate: handleAnnotationCreate,
     onAnnotationUpdate,
     onAnnotationDelete,
     onAnnotationSelect,
@@ -98,6 +119,26 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     pinColor,
     categoryColors,
   });
+
+  // Track mouse position for all pointer events
+  const trackMousePosition = (e: MouseEvent) => {
+    setLastMousePosition({ x: e.clientX, y: e.clientY });
+  };
+  
+  // Add event listener to track mouse position
+  useEffect(() => {
+    document.addEventListener('mousemove', trackMousePosition);
+    return () => {
+      document.removeEventListener('mousemove', trackMousePosition);
+    };
+  }, []);
+
+  // Reset isNewAnnotation when selectedAnnotation changes
+  useEffect(() => {
+    if (!selectedAnnotation) {
+      setIsNewAnnotation(false);
+    }
+  }, [selectedAnnotation]);
 
   // Expose the getAnnotationsJSON method via ref
   useImperativeHandle(ref, () => ({
@@ -182,8 +223,11 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   const handleAnnotationUpdate = (id: string, updates: Partial<Annotation>) => {
-    console.log('Updating annotation:', id, updates);
+    console.log('Atualizando anotação:', id, updates);
     updateAnnotation(id, updates);
+    
+    // Reset isNewAnnotation flag after an update
+    setIsNewAnnotation(false);
   };
 
   const handleCommentSubmit = (content: string) => {
@@ -236,6 +280,14 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         updateAnnotation(newAnnotation.id, { color: textAnnotationColor });
       }
       
+      // Set position for the details dialog
+      if (lastMousePosition) {
+        setSelectedAnnotationPosition(lastMousePosition);
+      }
+      
+      // Set isNewAnnotation flag to true so details opens in edit mode
+      setIsNewAnnotation(true);
+      
       setShowTextPopup(false);
     }
   };
@@ -277,6 +329,14 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         tags: selectedTags,
         color: pinAnnotationColor,
       });
+      
+      // Set position for the details dialog
+      if (lastMousePosition) {
+        setSelectedAnnotationPosition(lastMousePosition);
+      }
+      
+      // Set isNewAnnotation flag to true so details opens in edit mode
+      setIsNewAnnotation(true);
       
       setShowPinPopup(false);
     }
@@ -378,6 +438,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
           onUpdate={handleAnnotationUpdate}
           onDelete={deleteAnnotation}
           position={selectedAnnotationPosition || undefined}
+          isNew={isNewAnnotation}
         />
       )}
 
@@ -403,17 +464,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       )}
 
       {/* Pin Popup */}
-      {showPinPopup && (
-        <PinPopup
-          position={{
-            x: pinPosition.x * scale,
-            y: pinPosition.y * scale
-          }}
-          onSubmit={handlePinSubmit}
-          onCancel={handlePinCancel}
-          availableTags={availableTags}
-        />
-      )}
+      {/* TODO: Add Pin Popup */}
     </div>
   );
 });

@@ -56,20 +56,20 @@ export const TextInputPopup: React.FC<TextInputPopupProps> = ({
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         className="w-full p-2 border border-gray-300 rounded-md min-h-[5rem] resize-y mb-3"
-        placeholder="Enter your text here..."
+        placeholder="Digite seu texto aqui..."
       />
       <div className="flex justify-end space-x-2">
         <button
           onClick={onCancel}
           className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
         >
-          Cancel
+          Cancelar
         </button>
         <button
           onClick={handleSubmit}
           className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
         >
-          Add Text
+          Adicionar Texto
         </button>
       </div>
     </div>

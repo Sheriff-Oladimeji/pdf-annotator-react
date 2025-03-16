@@ -9,6 +9,7 @@ interface AnnotationDetailsProps {
   onDelete: (id: string) => void;
   onClose: () => void;
   position?: { x: number, y: number }; // Optional position for the dialog
+  isNew?: boolean; // Flag to indicate if this is a newly created annotation
 }
 
 export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
@@ -17,8 +18,9 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   onDelete,
   onClose,
   position,
+  isNew = false,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(isNew);
   const [content, setContent] = useState(annotation.content || '');
   const [selectedCategory, setSelectedCategory] = useState<ENEMCategory | undefined>(
     annotation.category
@@ -32,6 +34,16 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
     setSelectedCategory(annotation.category);
     setTags(annotation.tags || []);
   }, [annotation, annotation.content, annotation.category, annotation.tags]);
+
+  // Log when component updates with isNew flag
+  useEffect(() => {
+    console.log('AnnotationDetails rendered:', { 
+      id: annotation.id, 
+      isNew, 
+      position, 
+      isEditing 
+    });
+  }, [annotation.id, isNew, position, isEditing]);
 
   const handleSave = () => {
     console.log('Saving annotation changes:', {
@@ -52,7 +64,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   };
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this annotation?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta anotação?')) {
       onDelete(annotation.id);
     }
   };
@@ -107,7 +119,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         </p>
         {annotation.category && (
           <p>
-            <strong>Category:</strong> {getCategoryDisplayName(annotation.category)}
+            <strong>Categoria:</strong> {getCategoryDisplayName(annotation.category)}
           </p>
         )}
         <p>
@@ -179,7 +191,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
           {/* Show tags for PIN annotations */}
           {annotation.type === AnnotationType.PIN && tags.length > 0 && (
             <div className="mb-4">
-              <strong>Issues:</strong>
+              <strong>Problemas:</strong>
               <div className="mt-2 space-y-2">
                 {Object.entries(groupedTags).map(([tipo, typeTags]) => (
                   <div key={tipo} className="bg-gray-50 p-2 rounded-md">

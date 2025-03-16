@@ -44,7 +44,7 @@ export const CommentPopup: React.FC<CommentPopupProps> = ({
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Add a comment..."
+          placeholder="Adicionar um comentário..."
           className="w-full min-h-[80px] p-2 rounded-md border border-gray-300 resize-y font-inherit text-sm mb-3"
         />
         <div className="flex justify-end space-x-2">
@@ -53,13 +53,13 @@ export const CommentPopup: React.FC<CommentPopupProps> = ({
             onClick={onCancel}
             className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
           >
-            Cancel
+            Cancelar
           </button>
           <button
             type="submit"
             className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
           >
-            Save
+            Salvar
           </button>
         </div>
       </form>

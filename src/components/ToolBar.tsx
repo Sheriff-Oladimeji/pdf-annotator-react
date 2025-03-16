@@ -81,7 +81,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
                 borderBottom: currentCategory ? `3px solid ${categoryColors?.[currentCategory] || 'transparent'}` : undefined
               }}
             >
-              <option value="">Select Category</option>
+              <option value="">Selecionar Categoria</option>
               {Object.values(ENEMCategory).map((category) => (
                 <option key={category} value={category}>
                   {getCategoryDisplayName(category)}
@@ -100,7 +100,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.NONE ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.NONE)}
-            title="Select Tool"
+            title="Ferramenta de Seleção"
           >
             <IoHandRightOutline size={18} />
           </button>
@@ -112,7 +112,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.HIGHLIGHT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.HIGHLIGHT)}
-            title="Highlight Text"
+            title="Destacar Texto"
           >
             <FaHighlighter size={16} />
           </button>
@@ -122,7 +122,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.UNDERLINE ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.UNDERLINE)}
-            title="Underline Text"
+            title="Sublinhar Texto"
           >
             <FaUnderline size={16} />
           </button>
@@ -132,7 +132,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.STRIKEOUT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.STRIKEOUT)}
-            title="Strikethrough Text"
+            title="Riscar Texto"
           >
             <FaStrikethrough size={16} />
           </button>
@@ -144,7 +144,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.RECTANGLE ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.RECTANGLE)}
-            title="Draw Rectangle"
+            title="Desenhar Retângulo"
           >
             <FaSquare size={16} />
           </button>
@@ -154,7 +154,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.DRAWING ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.DRAWING)}
-            title="Free Drawing"
+            title="Desenho Livre"
           >
             <FaPencilAlt size={16} />
           </button>
@@ -166,7 +166,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.TEXT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.TEXT)}
-            title="Add Text"
+            title="Adicionar Texto"
           >
             <IoTextOutline size={18} />
           </button>
@@ -176,7 +176,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.COMMENT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.COMMENT)}
-            title="Add Comment"
+            title="Adicionar Comentário"
           >
             <IoChatbubbleOutline size={18} />
           </button>
@@ -186,7 +186,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               currentMode === AnnotationMode.PIN ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.PIN)}
-            title="Add Issue Pin"
+            title="Adicionar Marcador"
           >
             <IoPinOutline size={18} />
           </button>
@@ -199,21 +199,21 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             <button
               onClick={handleZoomOut}
               className="px-2 py-1 border-r border-gray-300 hover:bg-gray-100 flex items-center justify-center"
-              title="Zoom Out"
+              title="Diminuir Zoom"
             >
               <IoRemoveOutline size={16} />
             </button>
             <button
               onClick={handleZoomReset}
               className="px-2 py-1 border-r border-gray-300 hover:bg-gray-100"
-              title="Reset Zoom"
+              title="Redefinir Zoom"
             >
               {zoomPercentage}%
             </button>
             <button
               onClick={handleZoomIn}
               className="px-2 py-1 hover:bg-gray-100 flex items-center justify-center"
-              title="Zoom In"
+              title="Aumentar Zoom"
             >
               <IoAddOutline size={16} />
             </button>
@@ -227,12 +227,12 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               className={`px-2 py-1 border-r border-gray-300 flex items-center justify-center ${
                 currentPage <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
               }`}
-              title="Previous Page"
+              title="Página Anterior"
             >
               <IoChevronBack size={16} />
             </button>
             <span className="px-3 py-1 text-sm">
-              Page {currentPage} of {numPages}
+              Página {currentPage} de {numPages}
             </span>
             <button
               onClick={() => onPageChange(currentPage + 1)}
@@ -240,7 +240,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               className={`px-2 py-1 flex items-center justify-center ${
                 currentPage >= numPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
               }`}
-              title="Next Page"
+              title="Próxima Página"
             >
               <IoChevronForward size={16} />
             </button>

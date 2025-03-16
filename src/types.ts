@@ -30,11 +30,6 @@ export enum ENEMCategory {
   COMPETENCIA5 = 'competencia5', // Elaborar proposta de intervenção para o problema abordado, respeitando os direitos humanos
 }
 
-export interface TagInterface {
-  _id?: string;
-  tag: string;
-  tipo: string;
-}
 
 export type Annotation = {
   id: string;
@@ -90,6 +85,17 @@ export type PDFAnnotatorProps = {
   commentColor?: string;
   pinColor?: string;
   categoryColors?: Record<ENEMCategory, string>;
-  availableTags?: TagInterface[];
+  availableTags?: CompetenciaInterface[];
   pdfWorkerSrc?: string;
 } & AnnotationEventCallbacks; 
+
+
+export interface CompetenciaInterface {
+  competencia: number
+  tagsCompetencia: TagInterface[]
+}
+export interface TagInterface {
+  _id?: string;
+  tag: string;
+  tipo: string;
+}

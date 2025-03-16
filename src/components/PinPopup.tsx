@@ -79,7 +79,7 @@ export const PinPopup: React.FC<PinPopupProps> = ({
       tabIndex={0}
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-base font-semibold">Add Issue Pin</h3>
+        <h3 className="text-base font-semibold">Adicionar Marcador</h3>
         <button 
           onClick={onCancel}
           className="p-1 rounded-full hover:bg-gray-200 text-gray-500"
@@ -93,7 +93,7 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         {tagTypes.length > 0 && (
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Issue Type:
+              Tipo de Problema:
             </label>
             <select
               value={selectedTagType}
@@ -113,7 +113,7 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         {selectedTagType && groupedTags[selectedTagType]?.length > 0 && (
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select Issues:
+              Selecionar Problemas:
             </label>
             <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-gray-200 rounded-md">
               {groupedTags[selectedTagType].map((tag) => (
@@ -138,7 +138,7 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         {selectedTags.length > 0 && (
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Selected Issues:
+              Problemas Selecionados:
             </label>
             <div className="flex flex-wrap gap-1 p-2 border border-gray-200 rounded-md bg-gray-50">
               {selectedTags.map((tag) => (
@@ -163,14 +163,14 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         {/* Additional comments textarea */}
         <div className="mb-3">
           <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-            Additional Comments (Optional):
+            Comentários Adicionais (Opcional):
           </label>
           <textarea
             id="content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md min-h-[80px] text-sm resize-y"
-            placeholder="Add any additional notes about this issue..."
+            placeholder="Adicione notas sobre este problema..."
           />
         </div>
         
@@ -180,7 +180,7 @@ export const PinPopup: React.FC<PinPopupProps> = ({
             onClick={onCancel}
             className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors text-sm"
           >
-            Cancel
+            Cancelar
           </button>
           <button
             type="submit"
@@ -191,7 +191,7 @@ export const PinPopup: React.FC<PinPopupProps> = ({
                 : 'bg-blue-500 hover:bg-blue-600 transition-colors'
             }`}
           >
-            Add Pin
+            Adicionar Marcador
           </button>
         </div>
       </form>
