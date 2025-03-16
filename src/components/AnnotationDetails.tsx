@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Annotation, AnnotationType, ENEMCategory, TagInterface } from '../types';
-import { getCategoryDisplayName } from '../utils';
+import { getCategoryDisplayName, getCategoryColor, DEFAULT_CATEGORY_COLORS } from '../utils';
+import { IoClose, IoSave, IoTrash, IoPencil, IoArrowBack } from 'react-icons/io5';
 
 interface AnnotationDetailsProps {
   annotation: Annotation;
   onUpdate: (id: string, updates: Partial<Annotation>) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  position?: { x: number, y: number }; // Optional position for the dialog
 }
 
 export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
@@ -14,6 +16,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   onUpdate,
   onDelete,
   onClose,
+  position,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(annotation.content || '');
@@ -24,16 +27,26 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
 
   // Update local state when annotation prop changes
   useEffect(() => {
+    console.log('Annotation updated in details component:', annotation);
     setContent(annotation.content || '');
     setSelectedCategory(annotation.category);
     setTags(annotation.tags || []);
-  }, [annotation]);
+  }, [annotation, annotation.content, annotation.category, annotation.tags]);
 
   const handleSave = () => {
-    onUpdate(annotation.id, { 
+    console.log('Saving annotation changes:', {
+      id: annotation.id,
+      color: getCategoryColor(selectedCategory),
       content,
       category: selectedCategory,
-      tags: tags
+      tags
+    });
+    
+    onUpdate(annotation.id, { 
+      content,
+      color: getCategoryColor(selectedCategory),
+      category: selectedCategory,
+      tags
     });
     setIsEditing(false);
   };
@@ -62,7 +75,13 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
 
   return (
     <div
-      className="fixed right-5 top-[70px] w-[300px] bg-white shadow-lg rounded-md p-4 z-50"
+      className="fixed w-[300px] bg-white shadow-lg rounded-md p-4 z-50"
+      style={{
+        top: position ? `${position.y}px` : '70px',
+        right: position ? 'auto' : '20px',
+        left: position ? `${position.x}px` : 'auto',
+        transform: position ? 'translate(-50%, 0)' : 'none',
+      }}
     >
       <div
         className="flex justify-between items-center mb-2.5"
@@ -70,13 +89,13 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         <h3
           className="m-0 text-base font-bold"
         >
-          Annotation
+          Anotação
         </h3>
         <button
           onClick={onClose}
-          className="bg-transparent border-0 text-xl cursor-pointer p-0"
+          className="bg-transparent border-0 text-xl cursor-pointer p-0 flex items-center justify-center"
         >
-          &times;
+          <IoClose size={22} />
         </button>
       </div>
 
@@ -84,7 +103,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         className="border-b border-gray-200 pb-2.5 mb-2.5"
       >
         <p>
-          <strong>Type:</strong> {annotation.type}
+          <strong>Tipo:</strong> {annotation.type}
         </p>
         {annotation.category && (
           <p>
@@ -92,16 +111,16 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
           </p>
         )}
         <p>
-          <strong>Created:</strong> {formatDate(annotation.createdAt)}
+          <strong>Criado:</strong> {formatDate(annotation.createdAt)}
         </p>
         {annotation.updatedAt && (
           <p>
-            <strong>Updated:</strong> {formatDate(annotation.updatedAt)}
+            <strong>Atualizado:</strong> {formatDate(annotation.updatedAt)}
           </p>
         )}
         {annotation.author && (
           <p>
-            <strong>Author:</strong> {annotation.author}
+            <strong>Autor:</strong> {annotation.author}
           </p>
         )}
       </div>
@@ -110,7 +129,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         <div>
           <div className="mb-2.5">
             <label htmlFor="category-select" className="block mb-1.5">
-              <strong>Category:</strong>
+              <strong>Competência:</strong>
             </label>
             <select
               id="category-select"
@@ -118,7 +137,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
               onChange={(e) => setSelectedCategory(e.target.value as ENEMCategory)}
               className="w-full p-2 border border-gray-300 rounded-md mb-2.5"
             >
-              <option value="">No Category</option>
+              <option value="">Sem Categoria</option>
               {Object.values(ENEMCategory).map((category) => (
                 <option key={category} value={category}>
                   {getCategoryDisplayName(category)}
@@ -128,7 +147,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
           </div>
           
           <label htmlFor="content-textarea" className="block mb-1.5">
-            <strong>Content:</strong>
+            <strong>Conteúdo:</strong>
           </label>
           <textarea
             id="content-textarea"
@@ -141,15 +160,17 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
           >
             <button
               onClick={() => setIsEditing(false)}
-              className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
+              className="px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors flex items-center"
             >
-              Cancel
+              <IoArrowBack className="mr-1" size={16} />
+              Cancelar
             </button>
             <button
               onClick={handleSave}
-              className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
             >
-              Save
+              <IoSave className="mr-1" size={16} />
+              Salvar
             </button>
           </div>
         </div>
@@ -182,11 +203,11 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
           <div
             className="mb-4"
           >
-            <strong>Content:</strong>
+            <strong>Conteúdo:</strong>
             <p
               className="mt-1.5 mb-0 whitespace-pre-wrap"
             >
-              {annotation.content || '(No content)'}
+              {annotation.content || '(Sem conteúdo)'}
             </p>
           </div>
           <div
@@ -194,15 +215,17 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
           >
             <button
               onClick={handleDelete}
-              className="px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+              className="px-3 py-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors flex items-center"
             >
-              Delete
+              <IoTrash className="mr-1" size={16} />
+              Apagar
             </button>
             <button
               onClick={() => setIsEditing(true)}
-              className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors flex items-center"
             >
-              Edit
+              <IoPencil className="mr-1" size={16} />
+              Editar
             </button>
           </div>
         </div>

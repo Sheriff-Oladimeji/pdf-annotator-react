@@ -119,20 +119,32 @@ export const useAnnotations = ({
 
   const updateAnnotation = useCallback(
     (id: string, updates: Partial<Annotation>): void => {
-      setAnnotations((prev) =>
-        prev.map((annotation) => {
+      console.log('useAnnotations updateAnnotation:', id, updates);
+      setAnnotations((prev) => {
+        const updated = prev.map((annotation) => {
           if (annotation.id === id) {
-            const updated = Object.assign({}, annotation, updates, {
+            const updatedAnnotation = {
+              ...annotation,
+              ...updates,
               updatedAt: new Date(),
-            });
-            onAnnotationUpdate?.(updated);
-            return updated;
+            };
+            console.log('Updated annotation:', updatedAnnotation);
+            // Call the callback if provided
+            onAnnotationUpdate?.(updatedAnnotation);
+            
+            // If this is the currently selected annotation, update the selection too
+            if (selectedAnnotation && selectedAnnotation.id === id) {
+              setSelectedAnnotation(updatedAnnotation);
+            }
+            
+            return updatedAnnotation;
           }
           return annotation;
-        })
-      );
+        });
+        return updated;
+      });
     },
-    [onAnnotationUpdate]
+    [onAnnotationUpdate, selectedAnnotation]
   );
 
   const deleteAnnotation = useCallback(

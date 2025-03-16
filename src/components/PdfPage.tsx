@@ -8,7 +8,7 @@ interface PdfPageProps {
   pageNumber: number;
   scale: number;
   annotations: Annotation[];
-  onAnnotationClick?: (annotation: Annotation) => void;
+  onAnnotationClick?: (annotation: Annotation, event?: React.MouseEvent) => void;
   onPointerDown?: (point: Point, pageIndex: number) => void;
   onPointerMove?: (point: Point, pageIndex: number) => void;
   onPointerUp?: (point: Point, pageIndex: number) => void;
@@ -17,6 +17,7 @@ interface PdfPageProps {
   activeDrawingPoints?: Point[];
   isDrawing?: boolean;
   drawingColor?: string;
+  selectedAnnotation?: Annotation | null;
 }
 
 export const PdfPage: React.FC<PdfPageProps> = ({
@@ -33,6 +34,7 @@ export const PdfPage: React.FC<PdfPageProps> = ({
   activeDrawingPoints = [],
   isDrawing = false,
   drawingColor,
+  selectedAnnotation = null,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,9 +80,15 @@ export const PdfPage: React.FC<PdfPageProps> = ({
     if (!containerRef.current) return { x: 0, y: 0 };
     
     const rect = containerRef.current.getBoundingClientRect();
+    // Get the coordinates relative to the container
+    const relativeX = event.clientX - rect.left;
+    const relativeY = event.clientY - rect.top;
+    
+    // Transform the coordinates according to the current scale
+    // This ensures that we store coordinates in the unscaled coordinate system
     return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
+      x: relativeX / scale,
+      y: relativeY / scale,
     };
   };
 
@@ -152,6 +160,7 @@ export const PdfPage: React.FC<PdfPageProps> = ({
           activeDrawingPoints={activeDrawingPoints}
           isDrawing={isDrawing}
           drawingColor={drawingColor}
+          selectedAnnotation={selectedAnnotation}
         />
       )}
     </div>

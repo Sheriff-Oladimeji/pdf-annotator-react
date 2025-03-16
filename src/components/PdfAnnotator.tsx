@@ -9,6 +9,7 @@ import { useAnnotations } from '../hooks/useAnnotations';
 import { PDFAnnotatorProps, Annotation, AnnotationMode, Point, ENEMCategory, AnnotationType, TagInterface } from '../types';
 import { AnnotationDetails } from './AnnotationDetails';
 import { annotationsToJSON, DEFAULT_CATEGORY_COLORS } from '../utils';
+import { AnnotationLayer } from './AnnotationLayer';
 
 // Define a ref type for exposing methods
 export interface PdfAnnotatorRef {
@@ -56,6 +57,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const [pinPageIndex, setPinPageIndex] = useState<number>(0);
   const [selectedENEMCategory, setSelectedENEMCategory] = useState<ENEMCategory | undefined>(currentCategory);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [selectedAnnotationPosition, setSelectedAnnotationPosition] = useState<{ x: number, y: number } | null>(null);
   
   // Configure the PDF worker
   useEffect(() => {
@@ -130,6 +132,18 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     setSelectedENEMCategory(currentCategory);
   }, [currentCategory]);
 
+  // Log when selected annotation changes
+  useEffect(() => {
+    console.log('Selected annotation changed:', selectedAnnotation);
+  }, [selectedAnnotation]);
+
+  // When the annotation mode changes or we deselect an annotation, reset the position
+  useEffect(() => {
+    if (currentMode !== AnnotationMode.NONE || !selectedAnnotation) {
+      setSelectedAnnotationPosition(null);
+    }
+  }, [currentMode, selectedAnnotation]);
+
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= numPages) {
       setCurrentPage(newPage);
@@ -156,25 +170,43 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     }
   };
 
-  const handleAnnotationClick = (annotation: Annotation) => {
+  const handleAnnotationClick = (annotation: Annotation, event?: React.MouseEvent) => {
+    // If we have a click event and we're in NONE mode, store the mouse position
+    if (event && currentMode === AnnotationMode.NONE) {
+      setSelectedAnnotationPosition({ x: event.clientX, y: event.clientY });
+    } else {
+      setSelectedAnnotationPosition(null);
+    }
+    
     selectAnnotation(annotation);
+  };
+
+  const handleAnnotationUpdate = (id: string, updates: Partial<Annotation>) => {
+    console.log('Updating annotation:', id, updates);
+    updateAnnotation(id, updates);
   };
 
   const handleCommentSubmit = (content: string) => {
     if (showCommentPopup && selectedAnnotation) {
-      updateAnnotation(selectedAnnotation.id, { content });
+      handleAnnotationUpdate(selectedAnnotation.id, { content });
       setShowCommentPopup(false);
     }
   };
 
   const handleAddComment = (point: Point, pageIndex: number) => {
-    setCommentPosition(point);
+    // point is already in unscaled coordinates thanks to the updated getRelativeCoordinates
+    // but the popup needs to appear at the scaled position on screen
+    setCommentPosition({
+      x: point.x * scale,
+      y: point.y * scale
+    });
     setShowCommentPopup(true);
   };
 
   // Handle adding text annotations
   const handleTextClick = (point: Point, pageIndex: number) => {
     if (currentMode === AnnotationMode.TEXT) {
+      // Store the original unscaled position for annotation creation
       setTextPosition(point);
       setTextPageIndex(pageIndex);
       setShowTextPopup(true);
@@ -183,7 +215,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
 
   const handleTextSubmit = (text: string) => {
     if (showTextPopup) {
-      // Create a rectangle for the text
+      // Create a rectangle for the text - no need to adjust for scale here
+      // since getRelativeCoordinates already adjusts for scale
       const rect = {
         x: textPosition.x,
         y: textPosition.y,
@@ -214,6 +247,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   // Handle adding pin annotations
   const handlePinClick = (point: Point, pageIndex: number) => {
     if (currentMode === AnnotationMode.PIN) {
+      // Store the original unscaled position for annotation creation
       setPinPosition(point);
       setPinPageIndex(pageIndex);
       setShowPinPopup(true);
@@ -223,6 +257,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const handlePinSubmit = (selectedTags: TagInterface[], content?: string) => {
     if (showPinPopup) {
       // Create a rectangle for the pin (pins are just points)
+      // No need to adjust for scale here since getRelativeCoordinates already adjusts for scale
       const rect = {
         x: pinPosition.x,
         y: pinPosition.y,
@@ -257,29 +292,32 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
 
   const renderPages = () => {
     if (!pdfDocument) return null;
-    
-    // For now, just render the current page
-    return (
-      <PdfPage
-        key={`page_${currentPage}`}
-        pdfDocument={pdfDocument}
-        pageNumber={currentPage}
-        scale={scale}
-        annotations={localAnnotations}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onAnnotationClick={handleAnnotationClick}
-        onCommentAdd={handleAddComment}
-        onTextClick={(point, pageIndex) => {
-          handleTextClick(point, pageIndex);
-          handlePinClick(point, pageIndex);
-        }}
-        activeDrawingPoints={drawingPoints}
-        isDrawing={isDrawing}
-        drawingColor={getAnnotationTypeColor(AnnotationType.DRAWING)}
-      />
-    );
+
+    const pages = [];
+    for (let i = 1; i <= numPages; i++) {
+      if (i === currentPage || i === currentPage - 1 || i === currentPage + 1) {
+        pages.push(
+          <PdfPage
+            key={i}
+            pdfDocument={pdfDocument}
+            pageNumber={i}
+            scale={scale}
+            annotations={localAnnotations.filter(a => a.pageIndex === i - 1)}
+            onAnnotationClick={handleAnnotationClick}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onCommentAdd={handleAddComment}
+            onTextClick={handleTextClick}
+            activeDrawingPoints={drawingPoints}
+            isDrawing={isDrawing}
+            drawingColor={drawingColor}
+            selectedAnnotation={selectedAnnotation}
+          />
+        );
+      }
+    }
+    return pages;
   };
 
   // Helper function to get the color for a specific annotation type
@@ -313,10 +351,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   return (
-    <div
-      className="flex flex-col w-full h-full"
-      ref={containerRef}
-    >
+    <div className="pdf-annotator bg-gray-100 min-h-screen">
       <ToolBar
         currentMode={currentMode}
         onModeChange={handleAnnotationModeChange}
@@ -329,46 +364,54 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         scale={scale}
         onScaleChange={handleScaleChange}
       />
-      <div
-        className="flex-grow bg-gray-200 overflow-auto p-4"
-      >
-        <div className="flex justify-center">
-          {pdfDocument && renderPages()}
-        </div>
-        
-        {showTextPopup && (
-          <TextInputPopup
-            position={textPosition}
-            onSubmit={handleTextSubmit}
-            onCancel={handleTextCancel}
-          />
-        )}
-        
-        {showCommentPopup && (
-          <CommentPopup
-            position={commentPosition}
-            onSubmit={handleCommentSubmit}
-            onCancel={() => setShowCommentPopup(false)}
-          />
-        )}
-
-        {showPinPopup && availableTags.length > 0 && (
-          <PinPopup
-            position={pinPosition}
-            onSubmit={handlePinSubmit}
-            onCancel={handlePinCancel}
-            availableTags={availableTags}
-            initialTags={[]}
-          />
-        )}
-      </div>
       
+      <div className="overflow-auto p-4 flex flex-col items-center" ref={containerRef}>
+        {renderPages()}
+      </div>
+
+      {/* Annotation Details Panel when an annotation is selected */}
       {selectedAnnotation && (
         <AnnotationDetails
+          key={`annotation-details-${selectedAnnotation.id}-${selectedAnnotation.updatedAt?.getTime() || 0}`}
           annotation={selectedAnnotation}
-          onUpdate={updateAnnotation}
-          onDelete={deleteAnnotation}
           onClose={() => selectAnnotation(null)}
+          onUpdate={handleAnnotationUpdate}
+          onDelete={deleteAnnotation}
+          position={selectedAnnotationPosition || undefined}
+        />
+      )}
+
+      {/* Comment Popup */}
+      {showCommentPopup && (
+        <CommentPopup
+          position={commentPosition}
+          onSubmit={handleCommentSubmit}
+          onCancel={() => setShowCommentPopup(false)}
+        />
+      )}
+
+      {/* Text Input Popup */}
+      {showTextPopup && (
+        <TextInputPopup
+          position={{
+            x: textPosition.x * scale,
+            y: textPosition.y * scale
+          }}
+          onSubmit={handleTextSubmit}
+          onCancel={handleTextCancel}
+        />
+      )}
+
+      {/* Pin Popup */}
+      {showPinPopup && (
+        <PinPopup
+          position={{
+            x: pinPosition.x * scale,
+            y: pinPosition.y * scale
+          }}
+          onSubmit={handlePinSubmit}
+          onCancel={handlePinCancel}
+          availableTags={availableTags}
         />
       )}
     </div>

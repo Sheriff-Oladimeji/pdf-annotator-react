@@ -1,6 +1,24 @@
 import React from 'react';
 import { AnnotationMode, ENEMCategory } from '../types';
 import { getCategoryDisplayName } from '../utils';
+import { 
+  IoHandRightOutline, 
+  IoTextOutline, 
+  IoChatbubbleOutline, 
+  IoPinOutline,
+  IoRemoveOutline,
+  IoChevronForward, 
+  IoChevronBack, 
+  IoAddOutline,
+  IoCaretDown
+} from 'react-icons/io5';
+import { 
+  FaHighlighter, 
+  FaUnderline, 
+  FaStrikethrough,
+  FaSquare, 
+  FaPencilAlt 
+} from 'react-icons/fa';
 
 interface ToolBarProps {
   currentMode: AnnotationMode;
@@ -71,9 +89,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               ))}
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-              </svg>
+              <IoCaretDown className="h-4 w-4" />
             </div>
           </div>
         </div>
@@ -86,7 +102,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.NONE)}
             title="Select Tool"
           >
-            <span role="img" aria-label="Hand">👆</span>
+            <IoHandRightOutline size={18} />
           </button>
           
           <div className="h-8 border-r border-gray-300 mx-1"></div>
@@ -98,7 +114,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.HIGHLIGHT)}
             title="Highlight Text"
           >
-            <span role="img" aria-label="Highlight">🖌️</span>
+            <FaHighlighter size={16} />
           </button>
           
           <button
@@ -108,7 +124,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.UNDERLINE)}
             title="Underline Text"
           >
-            <span role="img" aria-label="Underline">_</span>
+            <FaUnderline size={16} />
           </button>
           
           <button
@@ -118,7 +134,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.STRIKEOUT)}
             title="Strikethrough Text"
           >
-            <span role="img" aria-label="Strikeout">✂️</span>
+            <FaStrikethrough size={16} />
           </button>
           
           <div className="h-8 border-r border-gray-300 mx-1"></div>
@@ -130,7 +146,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.RECTANGLE)}
             title="Draw Rectangle"
           >
-            <span role="img" aria-label="Rectangle">⬜</span>
+            <FaSquare size={16} />
           </button>
           
           <button
@@ -140,7 +156,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.DRAWING)}
             title="Free Drawing"
           >
-            <span role="img" aria-label="Drawing">✏️</span>
+            <FaPencilAlt size={16} />
           </button>
           
           <div className="h-8 border-r border-gray-300 mx-1"></div>
@@ -152,7 +168,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.TEXT)}
             title="Add Text"
           >
-            <span role="img" aria-label="Text">T</span>
+            <IoTextOutline size={18} />
           </button>
           
           <button
@@ -162,7 +178,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.COMMENT)}
             title="Add Comment"
           >
-            <span role="img" aria-label="Comment">💬</span>
+            <IoChatbubbleOutline size={18} />
           </button>
           
           <button
@@ -172,44 +188,20 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             onClick={() => onModeChange(AnnotationMode.PIN)}
             title="Add Issue Pin"
           >
-            <span role="img" aria-label="Pin">📌</span>
+            <IoPinOutline size={18} />
           </button>
         </div>
         
         {/* Page navigation and zoom controls */}
         <div className="flex items-center space-x-4">
-          {/* Category selector dropdown */}
-          <div className="relative">
-            <select
-              value={currentCategory || ''}
-              onChange={handleCategoryChange}
-              className="appearance-none bg-white border border-gray-300 rounded-md py-1.5 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-16"
-              style={{
-                borderBottom: currentCategory ? `3px solid ${categoryColors?.[currentCategory] || 'transparent'}` : undefined
-              }}
-            >
-              <option value="">Select Category</option>
-              {Object.values(ENEMCategory).map((category) => (
-                <option key={category} value={category}>
-                  {getCategoryDisplayName(category)}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-              </svg>
-            </div>
-          </div>
-          
           {/* Zoom controls */}
           <div className="flex items-center bg-white border border-gray-300 rounded-md">
             <button
               onClick={handleZoomOut}
-              className="px-2 py-1 border-r border-gray-300 hover:bg-gray-100"
+              className="px-2 py-1 border-r border-gray-300 hover:bg-gray-100 flex items-center justify-center"
               title="Zoom Out"
             >
-              −
+              <IoRemoveOutline size={16} />
             </button>
             <button
               onClick={handleZoomReset}
@@ -220,10 +212,10 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             </button>
             <button
               onClick={handleZoomIn}
-              className="px-2 py-1 hover:bg-gray-100"
+              className="px-2 py-1 hover:bg-gray-100 flex items-center justify-center"
               title="Zoom In"
             >
-              +
+              <IoAddOutline size={16} />
             </button>
           </div>
 
@@ -232,12 +224,12 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage <= 1}
-              className={`px-2 py-1 border-r border-gray-300 ${
+              className={`px-2 py-1 border-r border-gray-300 flex items-center justify-center ${
                 currentPage <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
               }`}
               title="Previous Page"
             >
-              ⬅️
+              <IoChevronBack size={16} />
             </button>
             <span className="px-3 py-1 text-sm">
               Page {currentPage} of {numPages}
@@ -245,12 +237,12 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage >= numPages}
-              className={`px-2 py-1 ${
+              className={`px-2 py-1 flex items-center justify-center ${
                 currentPage >= numPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'
               }`}
               title="Next Page"
             >
-              ➡️
+              <IoChevronForward size={16} />
             </button>
           </div>
         </div>
