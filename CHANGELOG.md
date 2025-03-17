@@ -5,6 +5,88 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.27] - 2025-03-17
+
+### Added
+- Visual feedback for rectangle drawing
+  - Added real-time preview when creating rectangle annotations
+  - Dynamic dashed outline shows exact dimensions before committing
+  - Consistent with the visual feedback already available for highlighting
+- Thickness selector for drawing tools
+  - Added a contextual thickness menu that appears when using drawing tools
+  - Support for multiple thickness levels (1px, 2px, 4px, 8px, 12px)
+  - Different default thicknesses per tool type (drawing, highlighting, rectangle)
+  - Thickness settings persist during the annotation session
+  - Visual feedback updates in real-time as thickness changes
+
+### Changed
+- 
+
+### Fixed
+- Restored selection tool button in the toolbar that was accidentally removed
+  - Re-added the hand icon button for selecting annotations
+  - Ensured proper button styling and hover effects
+  - Maintained proper spacing between toolbar sections
+- Fixed PDF rotation issue
+  - Added rotation override to prevent PDFs from rendering upside-down
+  - Ensures consistent orientation regardless of PDF metadata
+  - Improves first-time rendering reliability
+
+## [0.1.26] - 2025-03-17
+
+### Added
+- Enhanced zoom controls in the toolbar
+  - Reset zoom button (percentage display) now fits PDF to viewport width
+  - Improved user experience by making zoom reset match the fitToWidth behavior
+  - Maintained backward compatibility with fallback to 1.0 scale
+
+### Changed
+- Temporarily commented out PIN annotation feature
+  - Disabled PIN annotation creation and handling functions
+  - Removed PIN case from annotation type color selection
+  - PIN functionality can be re-enabled in a future release if needed
+- Improved category selection behavior
+  - Now automatically selects the first custom category by default
+  - Falls back to the first ENEM category if no custom categories exist
+  - No longer restricts the ToolBar to only ENEM categories
+  - Fixed an issue with the scrolling panel by removing extra 'p-4' class
+
+### Fixed
+-
+
+## [0.1.25] - 2024-07-16
+
+### Fixed
+- HIGHLIGHTING mode now works correctly with proper visual feedback
+  - Fixed issue where highlight marks weren't being drawn while making free-form highlighting annotations
+  - Added proper line caps and joins for a marker-like visual effect
+  - Improved real-time preview rendering for marker highlighting
+  - Fixed color handling for highlighting annotations
+
+### Changed
+- Temporarily commented out PIN annotation feature
+  - Disabled PIN annotation creation and handling functions
+  - Removed PIN case from annotation type color selection
+  - PIN functionality can be re-enabled in a future release if needed
+- Improved category selection behavior
+  - Now automatically selects the first custom category by default
+  - Falls back to the first ENEM category if no custom categories exist
+  - No longer restricts the ToolBar to only ENEM categories
+  - Fixed an issue with the scrolling panel by removing extra 'p-4' class
+
+## [0.1.24] - 2024-07-16
+
+### Added
+- Enhanced tag management in the AnnotationDetails component
+  - Added ability to add/remove tags from available tag lists
+  - Implemented shadcn-inspired badge UI for tags
+  - Added dropdown selector for tag categories
+  - Made tags available for all annotation types, not just PIN annotations
+
+### Changed
+- Improved tag display with rounded-pill design for better visual distinction
+- Tags now respect the selected category color for visual consistency
+
 ## [0.1.23] - 2024-07-16
 
 ### Added

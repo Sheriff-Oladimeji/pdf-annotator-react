@@ -17,7 +17,11 @@ interface PdfPageProps {
   activeDrawingPoints?: Point[];
   isDrawing?: boolean;
   drawingColor?: string;
+  drawingThickness?: number;
   selectedAnnotation?: Annotation | null;
+  currentMode?: AnnotationMode;
+  startPoint?: Point | null;
+  forceRotation?: number;
 }
 
 export const PdfPage: React.FC<PdfPageProps> = ({
@@ -34,7 +38,11 @@ export const PdfPage: React.FC<PdfPageProps> = ({
   activeDrawingPoints = [],
   isDrawing = false,
   drawingColor,
+  drawingThickness,
   selectedAnnotation = null,
+  currentMode = AnnotationMode.NONE,
+  startPoint = null,
+  forceRotation = null,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,7 +56,10 @@ export const PdfPage: React.FC<PdfPageProps> = ({
 
       try {
         const page = await pdfDocument.getPage(pageNumber);
-        const viewport = page.getViewport({ scale });
+        const viewport = page.getViewport({ 
+          scale, 
+          rotation: forceRotation !== null ? forceRotation : undefined 
+        });
         
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
@@ -74,7 +85,7 @@ export const PdfPage: React.FC<PdfPageProps> = ({
     };
 
     renderPage();
-  }, [pdfDocument, pageNumber, scale]);
+  }, [pdfDocument, pageNumber, scale, forceRotation]);
 
   const getRelativeCoordinates = (event: React.PointerEvent): Point => {
     if (!containerRef.current) return { x: 0, y: 0 };
@@ -160,7 +171,10 @@ export const PdfPage: React.FC<PdfPageProps> = ({
           activeDrawingPoints={activeDrawingPoints}
           isDrawing={isDrawing}
           drawingColor={drawingColor}
+          drawingThickness={drawingThickness}
           selectedAnnotation={selectedAnnotation}
+          currentMode={currentMode}
+          startPoint={startPoint}
         />
       )}
     </div>

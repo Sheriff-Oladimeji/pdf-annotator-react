@@ -17,6 +17,7 @@ export enum AnnotationType {
   STRIKEOUT = 'strikeout',
   RECTANGLE = 'rectangle',
   DRAWING = 'drawing',
+  HIGHLIGHTING = 'highlighting',
   TEXT = 'text',
   COMMENT = 'comment',
   PIN = 'pin',
@@ -41,20 +42,20 @@ export interface CategoryItem {
 // Type for either ENEMCategory or custom category string ID
 export type CategoryType = ENEMCategory | string;
 
-export type Annotation = {
+export interface Annotation {
   id: string;
   type: AnnotationType;
   rect: AnnotationRect;
   pageIndex: number;
-  content?: string;
-  color?: string;
+  color: string;
+  content: string;
+  points?: Point[];
+  tags?: TagInterface[];
   createdAt: Date;
   updatedAt?: Date;
-  author?: string;
-  points?: Point[];
-  category?: CategoryType; // Updated to accept either ENEMCategory or custom category
-  tags?: TagInterface[];
-};
+  category?: CategoryType;
+  thickness?: number; // Add thickness property to store stroke width
+}
 
 export type AnnotationEventCallbacks = {
   onAnnotationCreate?: (annotation: Annotation) => void;
@@ -70,6 +71,7 @@ export enum AnnotationMode {
   STRIKEOUT = 'strikeout',
   RECTANGLE = 'rectangle',
   DRAWING = 'drawing',
+  HIGHLIGHTING = 'highlighting',
   TEXT = 'text',
   COMMENT = 'comment',
   PIN = 'pin',
@@ -95,17 +97,25 @@ export type PDFAnnotatorProps = {
   textColor?: string;
   commentColor?: string;
   pinColor?: string;
+  highlightingColor?: string; // New prop for the highlighting marker color
   categoryColors?: Record<string, string>; // Updated to accept any string key
-  availableTags?: CompetenciaInterface[];
+  availableTags?: TagCompetenciaInterface[];
   pdfWorkerSrc?: string;
   fitToWidth?: boolean;
+  defaultThickness?: Record<AnnotationMode, number>; // Default thickness for each annotation mode
 } & AnnotationEventCallbacks; 
 
 
-export interface CompetenciaInterface {
+export interface TagCompetenciaInterface {
   competencia: number
   tagsCompetencia: TagInterface[]
 }
+export interface TagInterface {
+  _id?: string;
+  tag: string;
+  tipo: string;
+}
+
 export interface TagInterface {
   _id?: string;
   tag: string;

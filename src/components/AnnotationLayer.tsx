@@ -1,6 +1,6 @@
 import React from 'react';
-import { Annotation, AnnotationType, Point } from '../types';
-import { pointsToSvgPath } from '../utils';
+import { Annotation, AnnotationType, Point, AnnotationMode } from '../types';
+import { pointsToSvgPath, calculateRectFromPoints } from '../utils';
 import { IoInformationCircle } from 'react-icons/io5';
 import { FaExclamationCircle } from 'react-icons/fa';
 
@@ -12,7 +12,10 @@ interface AnnotationLayerProps {
   activeDrawingPoints?: Point[];
   isDrawing?: boolean;
   drawingColor?: string;
+  drawingThickness?: number;
   selectedAnnotation?: Annotation | null;
+  currentMode?: AnnotationMode;
+  startPoint?: Point | null;
 }
 
 export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
@@ -23,7 +26,10 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   activeDrawingPoints = [],
   isDrawing = false,
   drawingColor = 'rgba(255, 0, 0, 0.7)', // Default red color
+  drawingThickness,
   selectedAnnotation = null,
+  currentMode = AnnotationMode.DRAWING,
+  startPoint = null,
 }) => {
   const pageAnnotations = annotations.filter(
     (annotation) => annotation.pageIndex === pageIndex
@@ -63,6 +69,25 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
     return {};
   };
 
+  // Helper function to get the appropriate stroke width for the current mode
+  const getStrokeWidth = () => {
+    if (drawingThickness !== undefined) {
+      return drawingThickness;
+    }
+    
+    // Fall back to default values if no thickness is provided
+    switch (currentMode) {
+      case AnnotationMode.DRAWING:
+        return 4;
+      case AnnotationMode.HIGHLIGHTING:
+        return 10;
+      case AnnotationMode.RECTANGLE:
+        return 2;
+      default:
+        return 2;
+    }
+  };
+
   return (
     <div
       className="absolute top-0 left-0 w-full h-full pointer-events-none"
@@ -74,7 +99,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
         className="absolute top-0 left-0 pointer-events-none"
       >
         {pageAnnotations.map((annotation) => {
-          const { id, type, rect, color, points } = annotation;
+          const { id, type, rect, color, points, thickness } = annotation;
           
           // Don't scale the rect coordinates here since the container is already scaled
           const scaledRect = {
@@ -111,7 +136,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   x2={scaledRect.x + scaledRect.width}
                   y2={scaledRect.y + scaledRect.height}
                   stroke={color}
-                  strokeWidth={2}
+                  strokeWidth={thickness || 2}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
                   className="pointer-events-auto cursor-pointer"
                   {...selectedStyle}
@@ -126,7 +151,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   x2={scaledRect.x + scaledRect.width}
                   y2={scaledRect.y + scaledRect.height / 2}
                   stroke={color}
-                  strokeWidth={2}
+                  strokeWidth={thickness || 2}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
                   className="pointer-events-auto cursor-pointer"
                   {...selectedStyle}
@@ -141,7 +166,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   width={scaledRect.width}
                   height={scaledRect.height}
                   stroke={color}
-                  strokeWidth={2}
+                  strokeWidth={thickness || 2}
                   fill="none"
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
                   className="pointer-events-auto cursor-pointer"
@@ -157,8 +182,27 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   key={id}
                   d={pathData}
                   stroke={color}
-                  strokeWidth={2}
+                  strokeWidth={thickness || 4}
                   fill="none"
+                  onClick={(e) => onAnnotationClick?.(annotation, e)}
+                  className="pointer-events-auto cursor-pointer"
+                  {...selectedStyle}
+                />
+              );
+            case AnnotationType.HIGHLIGHTING:
+              if (!points || points.length < 2) return null;
+              // Don't scale points as the container is already scaled
+              const highlightingPathData = pointsToSvgPath(points);
+              return (
+                <path
+                  key={id}
+                  d={highlightingPathData}
+                  stroke={color}
+                  strokeWidth={thickness || 20}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  opacity={0.6}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
                   className="pointer-events-auto cursor-pointer"
                   {...selectedStyle}
@@ -282,12 +326,30 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
           }
         })}
 
-        {isDrawing && activeDrawingPoints.length >= 2 && (
+        {isDrawing && activeDrawingPoints.length >= 2 && currentMode !== AnnotationMode.RECTANGLE && (
           <path
             d={pointsToSvgPath(activeDrawingPoints)}
             stroke={drawingColor}
-            strokeWidth={2}
+            strokeWidth={getStrokeWidth()}
+            strokeLinecap={currentMode === AnnotationMode.HIGHLIGHTING ? "round" : "butt"}
+            strokeLinejoin={currentMode === AnnotationMode.HIGHLIGHTING ? "round" : "miter"}
             fill="none"
+            opacity={currentMode === AnnotationMode.HIGHLIGHTING ? 0.8 : 1}
+            className="pointer-events-none"
+          />
+        )}
+        
+        {/* Visual feedback for rectangle drawing */}
+        {currentMode === AnnotationMode.RECTANGLE && startPoint && activeDrawingPoints.length > 0 && (
+          <rect
+            x={Math.min(startPoint.x, activeDrawingPoints[activeDrawingPoints.length - 1].x)}
+            y={Math.min(startPoint.y, activeDrawingPoints[activeDrawingPoints.length - 1].y)}
+            width={Math.abs(activeDrawingPoints[activeDrawingPoints.length - 1].x - startPoint.x)}
+            height={Math.abs(activeDrawingPoints[activeDrawingPoints.length - 1].y - startPoint.y)}
+            stroke={drawingColor}
+            strokeWidth={getStrokeWidth()}
+            fill="none"
+            strokeDasharray="4 2"
             className="pointer-events-none"
           />
         )}

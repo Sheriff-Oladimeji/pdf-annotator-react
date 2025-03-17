@@ -30,8 +30,10 @@ interface UseAnnotationsProps extends AnnotationEventCallbacks {
   textColor?: string;
   commentColor?: string;
   pinColor?: string;
+  highlightingColor?: string;
   categoryColors?: Record<string, string>;
   customCategories?: CategoryItem[];
+  thickness?: number;
 }
 
 export const useAnnotations = ({
@@ -50,8 +52,10 @@ export const useAnnotations = ({
   textColor,
   commentColor,
   pinColor,
+  highlightingColor,
   categoryColors,
   customCategories = [],
+  thickness = 2,
 }: UseAnnotationsProps) => {
   const [annotations, setAnnotations] = useState<Annotation[]>(initialAnnotations);
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
@@ -77,7 +81,8 @@ export const useAnnotations = ({
         drawingColor,
         textColor,
         commentColor,
-        pinColor
+        pinColor,
+        highlightingColor
       );
     },
     [
@@ -89,6 +94,7 @@ export const useAnnotations = ({
       textColor,
       commentColor,
       pinColor,
+      highlightingColor,
       categoryColors,
       customCategories
     ]
@@ -101,25 +107,30 @@ export const useAnnotations = ({
       content?: string,
       points?: Point[]
     ): Annotation => {
+      const color = getColor(type, currentCategory);
+      
       const newAnnotation: Annotation = {
         id: uuidv4(),
         type,
         rect,
         pageIndex: rect.pageIndex,
-        color: getColor(type, currentCategory),
-        content,
+        color,
+        content: content || '',
         points,
         createdAt: new Date(),
-        category: currentCategory, // Add the current category to the annotation
+        updatedAt: new Date(),
+        thickness: thickness
       };
-
-      setAnnotations((prev) => {
-        return prev.concat([newAnnotation]);
-      });
-      onAnnotationCreate?.(newAnnotation);
+      
+      setAnnotations((prev) => [...prev, newAnnotation]);
+      
+      if (onAnnotationCreate) {
+        onAnnotationCreate(newAnnotation);
+      }
+      
       return newAnnotation;
     },
-    [getColor, onAnnotationCreate, currentCategory]
+    [currentCategory, getColor, onAnnotationCreate, thickness]
   );
 
   const updateAnnotation = useCallback(
@@ -187,7 +198,7 @@ export const useAnnotations = ({
       const annotationType = annotationModeToType(currentMode);
       if (!annotationType) return;
 
-      if (annotationType === AnnotationType.DRAWING) {
+      if (annotationType === AnnotationType.DRAWING || annotationType === AnnotationType.HIGHLIGHTING) {
         setIsDrawing(true);
         setDrawingPoints([point]);
       } else {
@@ -199,7 +210,7 @@ export const useAnnotations = ({
 
   const handlePointerMove = useCallback(
     (point: Point, pageIndex: number): void => {
-      if (currentMode === AnnotationMode.DRAWING && isDrawing) {
+      if ((currentMode === AnnotationMode.DRAWING || currentMode === AnnotationMode.HIGHLIGHTING) && isDrawing) {
         setDrawingPoints((prev) => {
           return prev.concat([point]);
         });
@@ -215,7 +226,7 @@ export const useAnnotations = ({
       const annotationType = annotationModeToType(currentMode);
       if (!annotationType) return;
 
-      if (annotationType === AnnotationType.DRAWING && isDrawing) {
+      if ((annotationType === AnnotationType.DRAWING || annotationType === AnnotationType.HIGHLIGHTING) && isDrawing) {
         // Finish drawing
         setIsDrawing(false);
         

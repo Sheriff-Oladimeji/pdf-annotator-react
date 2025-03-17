@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Annotation, AnnotationType, ENEMCategory, TagInterface, CategoryItem, CategoryType } from '../types';
+import { Annotation, AnnotationType, ENEMCategory, TagInterface, CategoryItem, CategoryType, TagCompetenciaInterface } from '../types';
 import { getCategoryDisplayName, getCategoryColor, DEFAULT_CATEGORY_COLORS } from '../utils';
-import { IoClose, IoSave, IoTrash, IoPencil, IoArrowBack } from 'react-icons/io5';
+import { IoClose, IoSave, IoTrash, IoPencil, IoArrowBack, IoAdd, IoRemove, IoCheckmark } from 'react-icons/io5';
 
 interface AnnotationDetailsProps {
   annotation: Annotation;
@@ -12,6 +12,7 @@ interface AnnotationDetailsProps {
   isNew?: boolean; // Flag to indicate if this is a newly created annotation
   customCategories?: CategoryItem[]; // Add customCategories prop
   categoryColors?: Record<string, string>; // Add categoryColors prop
+  availableTags?: TagCompetenciaInterface[]; // Add availableTags prop
 }
 
 export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
@@ -23,6 +24,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   isNew = false,
   customCategories = [],
   categoryColors = {},
+  availableTags = [],
 }) => {
   const [isEditing, setIsEditing] = useState(isNew);
   const [content, setContent] = useState(annotation.content || '');
@@ -30,6 +32,8 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
     annotation.category
   );
   const [tags, setTags] = useState<TagInterface[]>(annotation.tags || []);
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  const [selectedCompetencia, setSelectedCompetencia] = useState<number | null>(null);
 
   // Calculate category color using custom categories
   const categoryColor = useMemo(() => {
@@ -61,6 +65,28 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
     
     return [...enemCategories, ...customCats];
   }, [customCategories]);
+
+  // Function to check if a tag is already selected
+  const isTagSelected = (tag: TagInterface) => {
+    return tags.some(t => 
+      (t._id && tag._id && t._id === tag._id) || 
+      (t.tag === tag.tag && t.tipo === tag.tipo)
+    );
+  };
+
+  // Function to toggle a tag in the selection
+  const toggleTag = (tag: TagInterface) => {
+    if (isTagSelected(tag)) {
+      // Remove tag
+      setTags(tags.filter(t => 
+        !((t._id && tag._id && t._id === tag._id) || 
+        (t.tag === tag.tag && t.tipo === tag.tipo))
+      ));
+    } else {
+      // Add tag
+      setTags([...tags, tag]);
+    }
+  };
 
   const handleSave = () => {
     onUpdate(annotation.id, { 
@@ -122,7 +148,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         </button>
       </div>
 
-      <div
+      {/* <div
         className="border-b border-gray-200 pb-2.5 mb-2.5"
       >
         <p>
@@ -156,7 +182,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             <strong>Autor:</strong> {annotation.author}
           </p>
         )}
-      </div>
+      </div> */}
 
       {isEditing ? (
         <div>
@@ -191,9 +217,117 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
               ))}
             </select>
           </div>
+
+          {/* Tag Selection UI */}
+          {availableTags.length > 0 && (
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <label className="font-medium text-gray-700">
+                  <strong>Tags:</strong>
+                </label>
+                <button 
+                  type="button"
+                  onClick={() => setShowTagSelector(!showTagSelector)}
+                  className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center"
+                >
+                  {showTagSelector ? (
+                    <>
+                      <IoRemove size={14} className="mr-1" />
+                      Ocultar Tags
+                    </>
+                  ) : (
+                    <>
+                      <IoAdd size={14} className="mr-1" />
+                      Adicionar Tags
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {/* Selected Tags Display */}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2 bg-gray-50 p-2 rounded-md">
+                  {tags.map((tag) => (
+                    <div 
+                      key={tag._id || `${tag.tipo}-${tag.tag}`}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                      style={{
+                        backgroundColor: `${categoryColor}15` || 'rgba(219, 234, 254, 1)',
+                        color: categoryColor || 'rgb(30, 64, 175)'
+                      }}
+                    >
+                      <span>{tag.tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleTag(tag)}
+                        className="ml-1 -mr-1 h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-red-200 hover:text-red-500 focus:outline-none focus:text-red-500"
+                      >
+                        <IoClose size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Tag Selector */}
+              {showTagSelector && (
+                <div className="bg-gray-50 rounded-md p-2 mb-3 border border-gray-200 max-h-[200px] overflow-y-auto">
+                  <div className="mb-2">
+                    <select
+                      value={selectedCompetencia || ''}
+                      onChange={(e) => setSelectedCompetencia(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full p-1.5 text-sm border border-gray-300 rounded-md"
+                    >
+                      <option value="">Selecione uma competência</option>
+                      {availableTags.map((comp) => (
+                        <option key={comp.competencia} value={comp.competencia}>
+                          Competência {comp.competencia}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {selectedCompetencia !== null && (
+                    <div className="space-y-1">
+                      {availableTags
+                        .find(c => c.competencia === selectedCompetencia)
+                        ?.tagsCompetencia.map((tag) => (
+                          <div 
+                            key={tag._id || `${tag.tipo}-${tag.tag}`}
+                            className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer text-sm ${
+                              isTagSelected(tag) 
+                                ? 'bg-blue-100 border border-blue-300' 
+                                : 'hover:bg-gray-100 border border-transparent'
+                            }`}
+                            onClick={() => toggleTag(tag)}
+                            style={{
+                              backgroundColor: isTagSelected(tag) 
+                                ? `${categoryColor}15` || 'rgba(219, 234, 254, 1)'
+                                : undefined,
+                              borderColor: isTagSelected(tag) 
+                                ? `${categoryColor}30` || 'rgba(147, 197, 253, 1)'
+                                : 'transparent'
+                            }}
+                          >
+                            <span>{tag.tag}</span>
+                            {isTagSelected(tag) && (
+                              <IoCheckmark 
+                                size={16} 
+                                className="text-blue-600"
+                                style={{ color: categoryColor || 'rgb(37, 99, 235)' }}
+                              />
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           
           <label htmlFor="content-textarea" className="block mb-1.5">
-            <strong>Conteúdo:</strong>
+            <strong>Comentário:</strong>
           </label>
           <textarea
             id="content-textarea"
@@ -227,29 +361,22 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         </div>
       ) : (
         <div>
-          {/* Show tags for PIN annotations */}
-          {annotation.type === AnnotationType.PIN && tags.length > 0 && (
+          {/* Show tags for annotations */}
+          {tags.length > 0 && (
             <div className="mb-4">
-              <strong>Problemas:</strong>
-              <div className="mt-2 space-y-2">
-                {Object.entries(groupedTags).map(([tipo, typeTags]) => (
-                  <div key={tipo} className="bg-gray-50 p-2 rounded-md">
-                    <div className="text-sm font-medium text-gray-700 mb-1">{tipo}:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {typeTags.map((tag) => (
-                        <span 
-                          key={tag._id || `${tag.tipo}-${tag.tag}`} 
-                          className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium"
-                          style={{ 
-                            backgroundColor: `${categoryColor}20` || 'rgba(219, 234, 254, 1)',
-                            color: categoryColor || 'rgb(30, 64, 175)'
-                          }}
-                        >
-                          {tag.tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+              <strong>Tags:</strong>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {tags.map((tag) => (
+                  <span 
+                    key={tag._id || `${tag.tipo}-${tag.tag}`} 
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    style={{ 
+                      backgroundColor: `${categoryColor}15` || 'rgba(219, 234, 254, 1)',
+                      color: categoryColor || 'rgb(30, 64, 175)'
+                    }}
+                  >
+                    {tag.tag}
+                  </span>
                 ))}
               </div>
             </div>

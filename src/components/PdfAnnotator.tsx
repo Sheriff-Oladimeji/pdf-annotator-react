@@ -39,12 +39,21 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   textColor,
   commentColor,
   pinColor = 'rgba(249, 115, 22, 0.7)', // Default orange
+  highlightingColor = 'rgba(255, 255, 0, 0.4)', // Default transparent yellow
   categoryColors = {} as Record<string, string>,
   customCategories = [],
   availableTags = [],
   pdfWorkerSrc,
   fitToWidth = true, // New prop to control whether to fit to width
+  defaultThickness,
 }, ref) => {
+  // Default thickness values if not provided
+  const defaultThicknessValues = defaultThickness || {
+    [AnnotationMode.DRAWING]: 4,
+    [AnnotationMode.HIGHLIGHTING]: 10,
+    [AnnotationMode.RECTANGLE]: 2
+  };
+
   const [pdfDocument, setPdfDocument] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(pageNumber);
@@ -58,11 +67,25 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const [showPinPopup, setShowPinPopup] = useState<boolean>(false);
   const [pinPosition, setPinPosition] = useState<Point>({ x: 0, y: 0 });
   const [pinPageIndex, setPinPageIndex] = useState<number>(0);
-  const [selectedENEMCategory, setSelectedENEMCategory] = useState<CategoryType | undefined>(currentCategory);
+  const [selectedENEMCategory, setSelectedENEMCategory] = useState<CategoryType | undefined>(
+    currentCategory || (customCategories.length > 0 ? customCategories[0].id : Object.values(ENEMCategory)[0])
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedAnnotationPosition, setSelectedAnnotationPosition] = useState<{ x: number, y: number } | null>(null);
   const [isNewAnnotation, setIsNewAnnotation] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number, y: number } | null>(null);
+  
+  // Initialize with the current mode's default thickness
+  const [currentMode, setCurrentMode] = useState<AnnotationMode>(annotationMode);
+  const [annotationThickness, setAnnotationThickness] = useState<number>(
+    annotationMode === AnnotationMode.DRAWING 
+      ? defaultThicknessValues[AnnotationMode.DRAWING] 
+      : annotationMode === AnnotationMode.HIGHLIGHTING 
+        ? defaultThicknessValues[AnnotationMode.HIGHLIGHTING]
+        : annotationMode === AnnotationMode.RECTANGLE
+          ? defaultThicknessValues[AnnotationMode.RECTANGLE]
+          : 2
+  );
   
   // Configure the PDF worker
   useEffect(() => {
@@ -118,9 +141,10 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const {
     annotations: localAnnotations,
     selectedAnnotation,
-    currentMode,
+    currentMode: localCurrentMode,
     drawingPoints,
     isDrawing,
+    startPoint,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -145,8 +169,10 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     textColor,
     commentColor,
     pinColor,
+    highlightingColor,
     categoryColors,
     customCategories,
+    thickness: annotationThickness,
   });
 
   // Track mouse position for all pointer events
@@ -221,8 +247,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   }, [annotationMode, setMode]);
 
   useEffect(() => {
-    setSelectedENEMCategory(currentCategory);
-  }, [currentCategory]);
+    setSelectedENEMCategory(currentCategory || (customCategories.length > 0 ? customCategories[0].id : Object.values(ENEMCategory)[0]));
+  }, [currentCategory, customCategories]);
 
   // Log when selected annotation changes
   useEffect(() => {
@@ -235,6 +261,20 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       setSelectedAnnotationPosition(null);
     }
   }, [currentMode, selectedAnnotation]);
+
+  // Update thickness when mode changes
+  useEffect(() => {
+    // Set the appropriate default thickness for the current mode
+    const thickness = currentMode === AnnotationMode.DRAWING 
+      ? defaultThicknessValues[AnnotationMode.DRAWING] 
+      : currentMode === AnnotationMode.HIGHLIGHTING 
+        ? defaultThicknessValues[AnnotationMode.HIGHLIGHTING]
+        : currentMode === AnnotationMode.RECTANGLE
+          ? defaultThicknessValues[AnnotationMode.RECTANGLE]
+          : 2;
+    
+    setAnnotationThickness(thickness);
+  }, [currentMode, defaultThicknessValues]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= numPages) {
@@ -348,57 +388,78 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   // Handle adding pin annotations
-  const handlePinClick = (point: Point, pageIndex: number) => {
-    if (currentMode === AnnotationMode.PIN) {
-      // Store the original unscaled position for annotation creation
-      setPinPosition(point);
-      setPinPageIndex(pageIndex);
-      setShowPinPopup(true);
-    }
-  };
+  // const handlePinClick = (point: Point, pageIndex: number) => {
+  //   if (currentMode === AnnotationMode.PIN) {
+  //     // Store the original unscaled position for annotation creation
+  //     setPinPosition(point);
+  //     setPinPageIndex(pageIndex);
+  //     setShowPinPopup(true);
+  //   }
+  // };
 
-  const handlePinSubmit = (selectedTags: TagInterface[], content?: string) => {
-    if (showPinPopup) {
-      // Create a rectangle for the pin (pins are just points)
-      // No need to adjust for scale here since getRelativeCoordinates already adjusts for scale
-      const rect = {
-        x: pinPosition.x,
-        y: pinPosition.y,
-        width: 24, // Width for clickable area
-        height: 24, // Height for clickable area
-        pageIndex: pinPageIndex,
-      };
+  // const handlePinSubmit = (selectedTags: TagInterface[], content?: string) => {
+  //   if (showPinPopup) {
+  //     // Create a rectangle for the pin (pins are just points)
+  //     // No need to adjust for scale here since getRelativeCoordinates already adjusts for scale
+  //     const rect = {
+  //       x: pinPosition.x,
+  //       y: pinPosition.y,
+  //       width: 24, // Width for clickable area
+  //       height: 24, // Height for clickable area
+  //       pageIndex: pinPageIndex,
+  //     };
       
-      // Get the color (use pin color or first tag's color if available)
-      const pinAnnotationColor = pinColor;
+  //     // Get the color (use pin color or first tag's color if available)
+  //     const pinAnnotationColor = pinColor;
       
-      // Create the pin annotation
-      const newAnnotation = createAnnotation(AnnotationType.PIN, rect, content || '');
+  //     // Create the pin annotation
+  //     const newAnnotation = createAnnotation(AnnotationType.PIN, rect, content || '');
       
-      // Update the annotation with tags and color
-      updateAnnotation(newAnnotation.id, {
-        tags: selectedTags,
-        color: pinAnnotationColor,
-      });
+  //     // Update the annotation with tags and color
+  //     updateAnnotation(newAnnotation.id, {
+  //       tags: selectedTags,
+  //       color: pinAnnotationColor,
+  //     });
       
-      // Set position for the details dialog
-      if (lastMousePosition) {
-        setSelectedAnnotationPosition(lastMousePosition);
-      }
+  //     // Set position for the details dialog
+  //     if (lastMousePosition) {
+  //       setSelectedAnnotationPosition(lastMousePosition);
+  //     }
       
-      // Set isNewAnnotation flag to true so details opens in edit mode
-      setIsNewAnnotation(true);
+  //     // Set isNewAnnotation flag to true so details opens in edit mode
+  //     setIsNewAnnotation(true);
       
-      setShowPinPopup(false);
-    }
-  };
+  //     setShowPinPopup(false);
+  //   }
+  // };
 
-  const handlePinCancel = () => {
-    setShowPinPopup(false);
-  };
+  // const handlePinCancel = () => {
+  //   setShowPinPopup(false);
+  // };
 
   const handleScaleChange = (newScale: number) => {
     setScale(newScale);
+  };
+
+  // Function to fit PDF to viewport width
+  const handleFitToWidth = async () => {
+    if (pdfDocument && containerRef.current) {
+      const fitScale = await calculateFitToWidthScale(pdfDocument);
+      setScale(fitScale);
+    }
+  };
+
+  const handleThicknessChange = (thickness: number) => {
+    setAnnotationThickness(thickness);
+    
+    // Update the default thickness for the current mode
+    if (currentMode === AnnotationMode.DRAWING) {
+      defaultThicknessValues[AnnotationMode.DRAWING] = thickness;
+    } else if (currentMode === AnnotationMode.HIGHLIGHTING) {
+      defaultThicknessValues[AnnotationMode.HIGHLIGHTING] = thickness;
+    } else if (currentMode === AnnotationMode.RECTANGLE) {
+      defaultThicknessValues[AnnotationMode.RECTANGLE] = thickness;
+    }
   };
 
   const renderPages = () => {
@@ -407,6 +468,13 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     const pages = [];
     for (let i = 1; i <= numPages; i++) {
       if (i === currentPage || i === currentPage - 1 || i === currentPage + 1) {
+        // Determine the color to use for drawing preview based on the current mode
+        const activeColor = currentMode === AnnotationMode.HIGHLIGHTING 
+          ? highlightingColor 
+          : currentMode === AnnotationMode.RECTANGLE
+            ? rectangleColor || 'rgba(255, 0, 0, 0.7)'
+            : drawingColor;
+
         pages.push(
           <PdfPage
             key={i}
@@ -422,8 +490,12 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
             onTextClick={handleTextClick}
             activeDrawingPoints={drawingPoints}
             isDrawing={isDrawing}
-            drawingColor={drawingColor}
+            drawingColor={activeColor}
+            drawingThickness={annotationThickness}
             selectedAnnotation={selectedAnnotation}
+            currentMode={currentMode}
+            startPoint={startPoint}
+            forceRotation={0} // Force rotation to 0 to prevent upside-down PDF rendering
           />
         );
       }
@@ -467,8 +539,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         return textColor || 'rgba(0, 0, 0, 1)';
       case AnnotationType.COMMENT:
         return commentColor || 'rgba(255, 255, 0, 0.7)';
-      case AnnotationType.PIN:
-        return pinColor;
+      // case AnnotationType.PIN:
+      //   return pinColor;
       default:
         return 'rgba(0, 0, 0, 1)';
     }
@@ -488,14 +560,17 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         currentPage={currentPage}
         numPages={numPages}
         onPageChange={handlePageChange}
-        currentCategory={isENEMCategory(selectedENEMCategory) ? selectedENEMCategory : undefined}
+        currentCategory={selectedENEMCategory}
         onCategoryChange={handleCategoryChange}
         categoryColors={categoryColors as Record<string, string>}
         scale={scale}
         onScaleChange={handleScaleChange}
+        onFitToWidth={handleFitToWidth}
+        currentThickness={annotationThickness}
+        onThicknessChange={handleThicknessChange}
       />
       
-      <div className="overflow-auto p-4 flex flex-col items-center" ref={containerRef}>
+      <div className="overflow-auto flex flex-col items-center" ref={containerRef}>
         {renderPages()}
       </div>
 
@@ -511,6 +586,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
           isNew={isNewAnnotation}
           customCategories={customCategories}
           categoryColors={categoryColors}
+          availableTags={availableTags}
         />
       )}
 

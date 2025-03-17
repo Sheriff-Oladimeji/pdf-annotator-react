@@ -30,7 +30,8 @@ export const getAnnotationColor = (
   drawingColor?: string,
   textColor?: string,
   commentColor?: string,
-  pinColor?: string
+  pinColor?: string,
+  highlightingColor?: string
 ): string => {
   switch (type) {
     case AnnotationType.HIGHLIGHT:
@@ -43,6 +44,8 @@ export const getAnnotationColor = (
       return rectangleColor || 'rgba(255, 0, 0, 0.3)';
     case AnnotationType.DRAWING:
       return drawingColor || 'rgba(255, 0, 0, 0.7)';
+    case AnnotationType.HIGHLIGHTING:
+      return highlightingColor || 'rgba(255, 255, 0, 0.4)'; // Transparent yellow
     case AnnotationType.TEXT:
       return textColor || 'rgba(0, 0, 0, 1)';
     case AnnotationType.COMMENT:
@@ -66,6 +69,8 @@ export const annotationModeToType = (mode: AnnotationMode): AnnotationType | nul
       return AnnotationType.RECTANGLE;
     case AnnotationMode.DRAWING:
       return AnnotationType.DRAWING;
+    case AnnotationMode.HIGHLIGHTING:
+      return AnnotationType.HIGHLIGHTING;
     case AnnotationMode.TEXT:
       return AnnotationType.TEXT;
     case AnnotationMode.COMMENT:

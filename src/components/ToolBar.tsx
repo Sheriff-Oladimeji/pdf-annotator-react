@@ -10,14 +10,17 @@ import {
   IoChevronForward, 
   IoChevronBack, 
   IoAddOutline,
-  IoCaretDown
+  IoCaretDown,
+  IoResize
 } from 'react-icons/io5';
 import { 
   FaHighlighter, 
   FaUnderline, 
   FaStrikethrough,
   FaSquare, 
-  FaPencilAlt 
+  FaPencilAlt,
+  FaMarker,
+  FaSlidersH
 } from 'react-icons/fa';
 
 interface ToolBarProps {
@@ -31,6 +34,9 @@ interface ToolBarProps {
   categoryColors?: Record<string, string>;
   scale: number;
   onScaleChange: (scale: number) => void;
+  onFitToWidth?: () => void;
+  currentThickness?: number;
+  onThicknessChange?: (thickness: number) => void;
 }
 
 export const ToolBar: React.FC<ToolBarProps> = ({
@@ -44,6 +50,9 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   categoryColors,
   scale,
   onScaleChange,
+  onFitToWidth,
+  currentThickness = 2,
+  onThicknessChange,
 }) => {
   const handleZoomIn = () => {
     onScaleChange(Math.min(scale + 0.2, 3.0));
@@ -54,7 +63,11 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   };
 
   const handleZoomReset = () => {
-    onScaleChange(1.0);
+    if (onFitToWidth) {
+      onFitToWidth();
+    } else {
+      onScaleChange(1.0);
+    }
   };
 
   const zoomPercentage = Math.round(scale * 100);
@@ -64,6 +77,20 @@ export const ToolBar: React.FC<ToolBarProps> = ({
     const value = e.target.value as CategoryType;
     onCategoryChange?.(value);
   };
+
+  // Handle thickness change
+  const handleThicknessChange = (thickness: number) => {
+    if (onThicknessChange) {
+      onThicknessChange(thickness);
+    }
+  };
+
+  // Show thickness selector only for relevant modes
+  const shouldShowThicknessSelector = [
+    AnnotationMode.DRAWING, 
+    AnnotationMode.HIGHLIGHTING, 
+    AnnotationMode.RECTANGLE
+  ].includes(currentMode);
 
   // Group tools into categories
   return (
@@ -92,6 +119,32 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               <IoCaretDown className="h-4 w-4" />
             </div>
           </div>
+
+          {/* Thickness selector - only show when in drawing, highlighting or rectangle mode */}
+          {shouldShowThicknessSelector && (
+            <div className="flex items-center space-x-2 bg-white border border-gray-300 rounded-md px-2 py-1">
+              <FaSlidersH size={14} className="text-gray-600" />
+              <span className="text-xs text-gray-700 mr-1">Espessura:</span>
+              {[1, 2, 4, 8, 12].map(thickness => (
+                <button
+                  key={thickness}
+                  onClick={() => handleThicknessChange(thickness)}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                    currentThickness === thickness ? 'bg-blue-100 border border-blue-400' : 'hover:bg-gray-100'
+                  }`}
+                  title={`Espessura ${thickness}px`}
+                >
+                  <div 
+                    className="bg-gray-700 rounded-full" 
+                    style={{ 
+                      width: `${Math.min(thickness * 1.5, 16)}px`, 
+                      height: `${Math.min(thickness * 1.5, 16)}px` 
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">
@@ -107,7 +160,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
           
           <div className="h-8 border-r border-gray-300 mx-1"></div>
           
-          <button
+          {/* <button
             className={`p-2 rounded-md border border-gray-300 ${
               currentMode === AnnotationMode.HIGHLIGHT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
@@ -115,9 +168,9 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             title="Destacar Texto"
           >
             <FaHighlighter size={16} />
-          </button>
+          </button> */}
           
-          <button
+          {/* <button
             className={`p-2 rounded-md border border-gray-300 ${
               currentMode === AnnotationMode.UNDERLINE ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
@@ -125,7 +178,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             title="Sublinhar Texto"
           >
             <FaUnderline size={16} />
-          </button>
+          </button> */}
           
           <button
             className={`p-2 rounded-md border border-gray-300 ${
@@ -159,9 +212,19 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             <FaPencilAlt size={16} />
           </button>
           
+          <button
+            className={`p-2 rounded-md border border-gray-300 ${
+              currentMode === AnnotationMode.HIGHLIGHTING ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
+            }`}
+            onClick={() => onModeChange(AnnotationMode.HIGHLIGHTING)}
+            title="Marcador"
+          >
+            <FaMarker size={16} />
+          </button>
+          
           <div className="h-8 border-r border-gray-300 mx-1"></div>
           
-          <button
+          {/* <button
             className={`p-2 rounded-md border border-gray-300 ${
               currentMode === AnnotationMode.TEXT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
@@ -169,9 +232,9 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             title="Adicionar Texto"
           >
             <IoTextOutline size={18} />
-          </button>
+          </button> */}
           
-          <button
+          {/* <button
             className={`p-2 rounded-md border border-gray-300 ${
               currentMode === AnnotationMode.COMMENT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
@@ -179,17 +242,17 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             title="Adicionar Comentário"
           >
             <IoChatbubbleOutline size={18} />
-          </button>
+          </button> */}
           
-          <button
+          {/* <button
             className={`p-2 rounded-md border border-gray-300 ${
               currentMode === AnnotationMode.PIN ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
             }`}
             onClick={() => onModeChange(AnnotationMode.PIN)}
             title="Adicionar Marcador"
           >
-            <IoPinOutline size={18} />
-          </button>
+            <IoPinOutline size={18} /> */}
+          {/* </button> */}
         </div>
         
         {/* Page navigation and zoom controls */}
