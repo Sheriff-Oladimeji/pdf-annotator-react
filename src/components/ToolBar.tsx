@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnnotationMode, ENEMCategory, CategoryType } from '../types';
+import { AnnotationMode, ENEMCategory, CategoryType, CategoryItem } from '../types';
 import { getCategoryDisplayName } from '../utils';
 import { 
   IoHandRightOutline, 
@@ -32,6 +32,7 @@ interface ToolBarProps {
   currentCategory?: CategoryType;
   onCategoryChange?: (category: CategoryType) => void;
   categoryColors?: Record<string, string>;
+  customCategories?: CategoryItem[];
   scale: number;
   onScaleChange: (scale: number) => void;
   onFitToWidth?: () => void;
@@ -48,6 +49,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   currentCategory,
   onCategoryChange,
   categoryColors,
+  customCategories = [],
   scale,
   onScaleChange,
   onFitToWidth,
@@ -109,11 +111,21 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               }}
             >
               <option value="">Selecionar Categoria</option>
+              {/* Display ENEM categories */}
               {Object.values(ENEMCategory).map((category) => (
                 <option key={category} value={category}>
-                  {getCategoryDisplayName(category)}
+                  {getCategoryDisplayName(category, customCategories)}
                 </option>
               ))}
+              {/* Display custom categories that are not ENEM categories */}
+              {customCategories
+                .filter(c => !Object.values(ENEMCategory).includes(c.id as ENEMCategory))
+                .map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.displayName}
+                  </option>
+                ))
+              }
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
               <IoCaretDown className="h-4 w-4" />

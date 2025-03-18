@@ -5,6 +5,40 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.29] - 2025-03-18
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Fixed category selection bug that was reverting to the first category
+  - Corrected issue where selecting a different category would revert to the default
+  - Modified the category selection logic to respect user's choice
+  - Updated ToolBar to display both ENEM and custom categories correctly
+  - Enhanced the handling of customCategories in dropdown options
+
+## [0.1.28] - 2025-03-18
+
+### Added
+- 
+
+### Changed
+- Improved tag selection UI in the AnnotationDetails component
+  - Selected tags now remain visible while browsing available tags
+  - Added visual separation between selected tags and available tags
+  - Enhanced the UI with a "Disponíveis" label for available tags
+  - Tag selector now only appears when a category is selected
+  - Available tags are now filtered based on the selected category
+
+### Fixed
+- Fixed tag filtering logic to match the selected category
+  - Tags are now automatically filtered by competency number based on the selected category
+  - Improved user experience by only showing relevant tags for each category
+  - Automatically selects the correct competency when opening the tag selector
+
 ## [0.1.27] - 2025-03-17
 
 ### Added

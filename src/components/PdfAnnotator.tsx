@@ -247,7 +247,13 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   }, [annotationMode, setMode]);
 
   useEffect(() => {
-    setSelectedENEMCategory(currentCategory || (customCategories.length > 0 ? customCategories[0].id : Object.values(ENEMCategory)[0]));
+    // Only set the default category if currentCategory is undefined/null
+    // This prevents overriding a user's selection
+    if (!currentCategory) {
+      setSelectedENEMCategory(customCategories.length > 0 ? customCategories[0].id : Object.values(ENEMCategory)[0]);
+    } else {
+      setSelectedENEMCategory(currentCategory);
+    }
   }, [currentCategory, customCategories]);
 
   // Log when selected annotation changes
@@ -563,6 +569,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         currentCategory={selectedENEMCategory}
         onCategoryChange={handleCategoryChange}
         categoryColors={categoryColors as Record<string, string>}
+        customCategories={customCategories}
         scale={scale}
         onScaleChange={handleScaleChange}
         onFitToWidth={handleFitToWidth}

@@ -219,7 +219,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
           </div>
 
           {/* Tag Selection UI */}
-          {availableTags.length > 0 && (
+          {availableTags.length > 0 && selectedCategory && (
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
                 <label className="font-medium text-gray-700">
@@ -227,7 +227,14 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                 </label>
                 <button 
                   type="button"
-                  onClick={() => setShowTagSelector(!showTagSelector)}
+                  onClick={() => {
+                    setShowTagSelector(!showTagSelector);
+                    // Try to convert the selected category to a number if it's a competency
+                    const categoryNum = parseInt(String(selectedCategory).replace(/\D/g, ''));
+                    if (!isNaN(categoryNum)) {
+                      setSelectedCompetencia(categoryNum);
+                    }
+                  }}
                   className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center"
                 >
                   {showTagSelector ? (
@@ -244,7 +251,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                 </button>
               </div>
               
-              {/* Selected Tags Display */}
+              {/* Selected Tags Display - Always visible when tags exist */}
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2 bg-gray-50 p-2 rounded-md">
                   {tags.map((tag) => (
@@ -269,7 +276,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                 </div>
               )}
               
-              {/* Tag Selector */}
+              {/* Tag Selector - Only visible when showTagSelector is true */}
               {showTagSelector && (
                 <div className="bg-gray-50 rounded-md p-2 mb-3 border border-gray-200 max-h-[200px] overflow-y-auto">
                   <div className="mb-2">
@@ -279,16 +286,32 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                       className="w-full p-1.5 text-sm border border-gray-300 rounded-md"
                     >
                       <option value="">Selecione uma competência</option>
-                      {availableTags.map((comp) => (
-                        <option key={comp.competencia} value={comp.competencia}>
-                          Competência {comp.competencia}
-                        </option>
-                      ))}
+                      {/* Filter availableTags based on the selected category if possible */}
+                      {availableTags
+                        .filter(comp => {
+                          // If selectedCategory is a competency (like "competencia1"), extract the number
+                          if (typeof selectedCategory === 'string' && selectedCategory.startsWith('competencia')) {
+                            const categoryNum = parseInt(selectedCategory.replace(/\D/g, ''));
+                            // Only show tags for this competency
+                            return !isNaN(categoryNum) && comp.competencia === categoryNum;
+                          }
+                          // For custom categories or non-numeric categories, show all tags
+                          return true;
+                        })
+                        .map((comp) => (
+                          <option key={comp.competencia} value={comp.competencia}>
+                            Competência {comp.competencia}
+                          </option>
+                        ))
+                      }
                     </select>
                   </div>
                   
                   {selectedCompetencia !== null && (
                     <div className="space-y-1">
+                      <div className="flex justify-between items-center py-1 mb-1 border-b border-gray-200">
+                        <span className="text-xs font-medium text-gray-500">Disponíveis</span>
+                      </div>
                       {availableTags
                         .find(c => c.competencia === selectedCompetencia)
                         ?.tagsCompetencia.map((tag) => (
