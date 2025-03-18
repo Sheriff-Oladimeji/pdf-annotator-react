@@ -2,7 +2,8 @@
 import './styles/tailwind.css';
 
 // Components
-export { PdfAnnotator } from './components/PdfAnnotator';
+export { PdfAnnotator, getAnnotationsJSON } from './PdfAnnotator';
+export type { PdfAnnotatorRef } from './PdfAnnotator';
 export { PdfPage } from './components/PdfPage';
 export { AnnotationLayer } from './components/AnnotationLayer';
 export { ToolBar } from './components/ToolBar';
@@ -13,13 +14,16 @@ export { CommentPopup } from './components/CommentPopup';
 export { useAnnotations } from './hooks/useAnnotations';
 
 // Types
-export { AnnotationType, AnnotationMode, ENEMCategory } from './types';
+export { AnnotationType, AnnotationMode } from './types';
 export type {
   Point,
   AnnotationRect,
   Annotation,
   AnnotationEventCallbacks,
   PDFAnnotatorProps,
+  CategoryItem,
+  CustomCategory,
+  TagInterface
 } from './types';
 
 // Utils

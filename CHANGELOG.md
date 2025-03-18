@@ -5,7 +5,7 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.29] - 2025-03-18
+## [Unreleased]
 
 ### Added
 - 
@@ -14,11 +14,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 
 
 ### Fixed
+- 
+
+## [0.1.32] - 2025-03-19
+
+### Added
+- New `onAnnotationsChange` prop to PdfAnnotator component
+  - Enables parent components to easily track and maintain the full annotations array
+  - Provides real-time updates whenever annotations are created, updated, or deleted
+  - Simplifies state management in parent components
+
+### Changed
+- Improved Tag Selection UI in AnnotationDetails component
+  - Added max-height constraints to prevent overflow in viewport
+  - Enhanced scrolling behavior for better user experience
+  - Made tag containers scrollable for better space management
+  - Added sticky header for better visual hierarchy
+  - Implemented two-column layout when tag selector is open
+    - Left column: Competência dropdown and Anotações textarea
+    - Right column: Tag selection interface
+    - Improves usability with better space utilization
+    - Provides more room for both annotation content and tag selection
+
+### Fixed
+- Fixed annotation color not updating when changing category
+  - Ensured color is properly updated in the annotation object when category changes
+  - Added explicit color handling in the update flow
+  - Enhanced color synchronization between categories and annotation rendering
+
+## [0.1.31] - 2025-03-18
+
+### Added
+- Type exports for better TypeScript support
+  - Added explicit exports for `PdfAnnotatorRef` type
+  - Enhanced type safety across component interfaces
+
+### Changed
+- Major refactoring to improve type system
+  - Replaced `ENEMCategory` and `CategoryType` with `CategoryItem`
+  - Updated components to use the new type definitions
+  - Enhanced custom categories support throughout the codebase
+- Improved project structure
+  - Restructured exports for better code organization
+  - Simplified root-level PdfAnnotator to be a re-export
+  - Consistent import paths across components
+
+### Removed
+- Deprecated props that are no longer needed
+  - Removed `availableTags` prop (using `customCategories` instead)
+  - Removed `categoryColors` prop (colors now come from category items)
+  - Simplified color handling across components
+
+### Fixed
+- Fixed import path issues that were causing build failures
+- Enhanced type compatibility between `CustomCategory` and `CategoryItem`
+
+## [0.1.30] - 2025-03-18
+
+### Fixed
 - Fixed category selection bug that was reverting to the first category
   - Corrected issue where selecting a different category would revert to the default
   - Modified the category selection logic to respect user's choice
   - Updated ToolBar to display both ENEM and custom categories correctly
   - Enhanced the handling of customCategories in dropdown options
+
+## [0.1.29] - 2025-03-16
+
+### Changed
+- Improved tag selection UI in the AnnotationDetails component
+  - Selected tags now remain visible while browsing available tags
+  - Added visual separation between selected tags and available tags
+  - Enhanced the UI with a "Disponíveis" label for available tags
+  - Tag selector now only appears when a category is selected
+  - Available tags are now filtered based on the selected category
+
+### Fixed
+- Fixed tag filtering logic to match the selected category
+  - Tags are now automatically filtered by competency number based on the selected category
+  - Improved user experience by only showing relevant tags for each category
+  - Automatically selects the correct competency when opening the tag selector
 
 ## [0.1.28] - 2025-03-18
 

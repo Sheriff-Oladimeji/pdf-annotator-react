@@ -1,6 +1,5 @@
 import React from 'react';
-import { AnnotationMode, ENEMCategory, CategoryType, CategoryItem } from '../types';
-import { getCategoryDisplayName } from '../utils';
+import { AnnotationMode, CategoryItem } from '../types';
 import { 
   IoHandRightOutline, 
   IoTextOutline, 
@@ -29,9 +28,8 @@ interface ToolBarProps {
   currentPage: number;
   numPages: number;
   onPageChange: (page: number) => void;
-  currentCategory?: CategoryType;
-  onCategoryChange?: (category: CategoryType) => void;
-  categoryColors?: Record<string, string>;
+  currentCategory?: CategoryItem;
+  onCategoryChange?: (category: CategoryItem) => void;
   customCategories?: CategoryItem[];
   scale: number;
   onScaleChange: (scale: number) => void;
@@ -48,7 +46,6 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   onPageChange,
   currentCategory,
   onCategoryChange,
-  categoryColors,
   customCategories = [],
   scale,
   onScaleChange,
@@ -76,8 +73,12 @@ export const ToolBar: React.FC<ToolBarProps> = ({
 
   // Handle category change
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as CategoryType;
-    onCategoryChange?.(value);
+    const categoryId = parseInt(e.target.value, 10);
+    // Find the category item that matches the selected ID
+    const selectedCategory = customCategories.find(cat => cat.category === categoryId);
+    if (selectedCategory && onCategoryChange) {
+      onCategoryChange(selectedCategory);
+    }
   };
 
   // Handle thickness change
@@ -94,38 +95,27 @@ export const ToolBar: React.FC<ToolBarProps> = ({
     AnnotationMode.RECTANGLE
   ].includes(currentMode);
 
-  // Group tools into categories
   return (
     <div className="w-full bg-gray-100 border-b border-gray-300 shadow-sm">
       {/* Main toolbar with essential tools */}
       <div className="flex flex-wrap items-center justify-between px-4 py-2 border-b border-gray-200">
-      <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4">
           {/* Category selector dropdown */}
           <div className="relative">
             <select
-              value={currentCategory || ''}
+              value={currentCategory?.category.toString() || ''}
               onChange={handleCategoryChange}
               className="appearance-none bg-white border border-gray-300 rounded-md py-1.5 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               style={{
-                borderBottom: currentCategory ? `3px solid ${categoryColors?.[currentCategory] || 'transparent'}` : undefined
+                borderBottom: currentCategory ? `3px solid ${currentCategory.color || 'transparent'}` : undefined
               }}
             >
               <option value="">Selecionar Categoria</option>
-              {/* Display ENEM categories */}
-              {Object.values(ENEMCategory).map((category) => (
-                <option key={category} value={category}>
-                  {getCategoryDisplayName(category, customCategories)}
+              {customCategories.map((category) => (
+                <option key={category.category} value={category.category}>
+                  {category.displayName}
                 </option>
               ))}
-              {/* Display custom categories that are not ENEM categories */}
-              {customCategories
-                .filter(c => !Object.values(ENEMCategory).includes(c.id as ENEMCategory))
-                .map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.displayName}
-                  </option>
-                ))
-              }
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
               <IoCaretDown className="h-4 w-4" />
@@ -172,26 +162,6 @@ export const ToolBar: React.FC<ToolBarProps> = ({
           
           <div className="h-8 border-r border-gray-300 mx-1"></div>
           
-          {/* <button
-            className={`p-2 rounded-md border border-gray-300 ${
-              currentMode === AnnotationMode.HIGHLIGHT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
-            }`}
-            onClick={() => onModeChange(AnnotationMode.HIGHLIGHT)}
-            title="Destacar Texto"
-          >
-            <FaHighlighter size={16} />
-          </button> */}
-          
-          {/* <button
-            className={`p-2 rounded-md border border-gray-300 ${
-              currentMode === AnnotationMode.UNDERLINE ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
-            }`}
-            onClick={() => onModeChange(AnnotationMode.UNDERLINE)}
-            title="Sublinhar Texto"
-          >
-            <FaUnderline size={16} />
-          </button> */}
-          
           <button
             className={`p-2 rounded-md border border-gray-300 ${
               currentMode === AnnotationMode.STRIKEOUT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
@@ -233,38 +203,6 @@ export const ToolBar: React.FC<ToolBarProps> = ({
           >
             <FaMarker size={16} />
           </button>
-          
-          <div className="h-8 border-r border-gray-300 mx-1"></div>
-          
-          {/* <button
-            className={`p-2 rounded-md border border-gray-300 ${
-              currentMode === AnnotationMode.TEXT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
-            }`}
-            onClick={() => onModeChange(AnnotationMode.TEXT)}
-            title="Adicionar Texto"
-          >
-            <IoTextOutline size={18} />
-          </button> */}
-          
-          {/* <button
-            className={`p-2 rounded-md border border-gray-300 ${
-              currentMode === AnnotationMode.COMMENT ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
-            }`}
-            onClick={() => onModeChange(AnnotationMode.COMMENT)}
-            title="Adicionar Comentário"
-          >
-            <IoChatbubbleOutline size={18} />
-          </button> */}
-          
-          {/* <button
-            className={`p-2 rounded-md border border-gray-300 ${
-              currentMode === AnnotationMode.PIN ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-50'
-            }`}
-            onClick={() => onModeChange(AnnotationMode.PIN)}
-            title="Adicionar Marcador"
-          >
-            <IoPinOutline size={18} /> */}
-          {/* </button> */}
         </div>
         
         {/* Page navigation and zoom controls */}

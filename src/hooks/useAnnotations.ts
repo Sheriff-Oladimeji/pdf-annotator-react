@@ -6,9 +6,7 @@ import {
   AnnotationType, 
   AnnotationRect, 
   Point,
-  ENEMCategory,
   AnnotationEventCallbacks,
-  CategoryType,
   CategoryItem
 } from '../types';
 import { 
@@ -21,7 +19,7 @@ import {
 interface UseAnnotationsProps extends AnnotationEventCallbacks {
   initialAnnotations?: Annotation[];
   annotationMode?: AnnotationMode;
-  currentCategory?: CategoryType;
+  currentCategory?: CategoryItem;
   highlightColor?: string;
   underlineColor?: string;
   strikeoutColor?: string;
@@ -31,7 +29,6 @@ interface UseAnnotationsProps extends AnnotationEventCallbacks {
   commentColor?: string;
   pinColor?: string;
   highlightingColor?: string;
-  categoryColors?: Record<string, string>;
   customCategories?: CategoryItem[];
   thickness?: number;
 }
@@ -53,7 +50,6 @@ export const useAnnotations = ({
   commentColor,
   pinColor,
   highlightingColor,
-  categoryColors,
   customCategories = [],
   thickness = 2,
 }: UseAnnotationsProps) => {
@@ -65,39 +61,16 @@ export const useAnnotations = ({
   const [startPoint, setStartPoint] = useState<Point | null>(null);
 
   const getColor = useCallback(
-    (type: AnnotationType, category?: CategoryType): string => {
+    (type: AnnotationType): string => {
       // If a category is provided, use its color
-      if (category) {
-        return getCategoryColor(category, categoryColors, customCategories);
+      if (currentCategory) {
+        return currentCategory.color;
       }
       
       // Otherwise, fall back to the default color for the annotation type
-      return getAnnotationColor(
-        type,
-        highlightColor,
-        underlineColor,
-        strikeoutColor,
-        rectangleColor,
-        drawingColor,
-        textColor,
-        commentColor,
-        pinColor,
-        highlightingColor
-      );
+      return getAnnotationColor(type);
     },
-    [
-      highlightColor,
-      underlineColor,
-      strikeoutColor,
-      rectangleColor,
-      drawingColor,
-      textColor,
-      commentColor,
-      pinColor,
-      highlightingColor,
-      categoryColors,
-      customCategories
-    ]
+    [currentCategory]
   );
 
   const createAnnotation = useCallback(
@@ -107,7 +80,7 @@ export const useAnnotations = ({
       content?: string,
       points?: Point[]
     ): Annotation => {
-      const color = getColor(type, currentCategory);
+      const color = getColor(type);
       
       const newAnnotation: Annotation = {
         id: uuidv4(),
@@ -119,7 +92,8 @@ export const useAnnotations = ({
         points,
         createdAt: new Date(),
         updatedAt: new Date(),
-        thickness: thickness
+        thickness: thickness,
+        category: currentCategory
       };
       
       setAnnotations((prev) => [...prev, newAnnotation]);
@@ -139,12 +113,19 @@ export const useAnnotations = ({
       setAnnotations((prev) => {
         const updated = prev.map((annotation) => {
           if (annotation.id === id) {
+            // Ensure color is updated if category changes
+            let updatedColor = updates.color;
+            if (updates.category && !updatedColor) {
+              updatedColor = updates.category.color;
+            }
+
             const updatedAnnotation = {
               ...annotation,
               ...updates,
+              color: updatedColor || annotation.color, // Ensure color is properly updated
               updatedAt: new Date(),
             };
-            console.log('Updated annotation:', updatedAnnotation);
+            console.log('Updated annotation with new color:', updatedAnnotation.color);
             // Call the callback if provided
             onAnnotationUpdate?.(updatedAnnotation);
             

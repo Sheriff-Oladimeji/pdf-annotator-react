@@ -24,23 +24,9 @@ export enum AnnotationType {
 }
 
 // Default ENEM categories - keep for backward compatibility
-export enum ENEMCategory {
-  COMPETENCIA1 = 'competencia1', // Demonstrar domínio da norma padrão da língua escrita
-  COMPETENCIA2 = 'competencia2', // Compreender a proposta de redação e aplicar conceitos das várias áreas de conhecimento
-  COMPETENCIA3 = 'competencia3', // Selecionar, relacionar, organizar e interpretar informações em defesa de um ponto de vista
-  COMPETENCIA4 = 'competencia4', // Demonstrar conhecimento dos mecanismos linguísticos necessários para a construção da argumentação
-  COMPETENCIA5 = 'competencia5', // Elaborar proposta de intervenção para o problema abordado, respeitando os direitos humanos
-}
 
-// Generic category item interface for custom categories
-export interface CategoryItem {
-  id: string;
-  displayName: string;
-  color: string;
-}
 
-// Type for either ENEMCategory or custom category string ID
-export type CategoryType = ENEMCategory | string;
+
 
 export interface Annotation {
   id: string;
@@ -53,7 +39,7 @@ export interface Annotation {
   tags?: TagInterface[];
   createdAt: Date;
   updatedAt?: Date;
-  category?: CategoryType;
+  category?: CategoryItem;
   thickness?: number; // Add thickness property to store stroke width
 }
 
@@ -86,9 +72,10 @@ export type PDFAnnotatorProps = {
   onPageChange?: (pageNumber: number) => void;
   annotationMode?: AnnotationMode;
   onAnnotationModeChange?: (mode: AnnotationMode) => void;
-  currentCategory?: CategoryType;
-  onCategoryChange?: (category: CategoryType) => void;
-  customCategories?: CategoryItem[]; // New prop to pass custom categories
+  currentCategory?: CategoryItem; // Current selected category
+  onCategoryChange?: (category: CategoryItem) => void; // Callback when category changes
+  onAnnotationsChange?: (annotations: Annotation[]) => void; // Callback when annotations array changes
+  customCategories?: CustomCategory[]; // Categories with their associated tags
   highlightColor?: string;
   underlineColor?: string;
   strikeoutColor?: string;
@@ -97,27 +84,29 @@ export type PDFAnnotatorProps = {
   textColor?: string;
   commentColor?: string;
   pinColor?: string;
-  highlightingColor?: string; // New prop for the highlighting marker color
-  categoryColors?: Record<string, string>; // Updated to accept any string key
-  availableTags?: TagCompetenciaInterface[];
+  highlightingColor?: string; // Prop for the highlighting marker color
   pdfWorkerSrc?: string;
   fitToWidth?: boolean;
-  defaultThickness?: Record<AnnotationMode, number>; // Default thickness for each annotation mode
-} & AnnotationEventCallbacks; 
+  defaultThickness?: number; // Default thickness for annotations
+} & AnnotationEventCallbacks;
 
 
-export interface TagCompetenciaInterface {
-  competencia: number
+export interface CustomCategory {
+  competencia: CategoryItem
   tagsCompetencia: TagInterface[]
 }
+
+
 export interface TagInterface {
   _id?: string;
   tag: string;
   tipo: string;
 }
 
-export interface TagInterface {
-  _id?: string;
-  tag: string;
-  tipo: string;
+
+// Generic category item interface for custom categories
+export interface CategoryItem {
+  category: number;
+  displayName: string;
+  color: string;
 }

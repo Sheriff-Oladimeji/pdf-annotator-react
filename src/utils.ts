@@ -1,63 +1,58 @@
-import { Annotation, AnnotationMode, AnnotationRect, AnnotationType, Point, ENEMCategory, CategoryItem, CategoryType } from './types';
+import { Annotation, AnnotationMode, AnnotationRect, AnnotationType, Point, CategoryItem } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 export const createAnnotation = (
   type: AnnotationType,
-  rect: AnnotationRect,
-  pageIndex: number,
-  color?: string,
-  content?: string,
-  points?: Point[]
+  rect: { x: number; y: number; width: number; height: number; pageIndex: number },
+  content: string = '',
+  color: string = 'rgba(255, 0, 0, 0.5)',
+  category?: CategoryItem
 ): Annotation => {
   return {
-    id: uuidv4(),
+    id: Math.random().toString(36).substring(2, 11),
     type,
     rect,
-    pageIndex,
-    color,
+    pageIndex: rect.pageIndex,
+    color: color,
     content,
-    points,
     createdAt: new Date(),
+    category,
   };
 };
 
 export const getAnnotationColor = (
   type: AnnotationType,
-  highlightColor?: string,
-  underlineColor?: string,
-  strikeoutColor?: string,
-  rectangleColor?: string,
-  drawingColor?: string,
-  textColor?: string,
-  commentColor?: string,
-  pinColor?: string,
-  highlightingColor?: string
+  category?: CategoryItem,
+  categoryColors?: Record<string, string>
 ): string => {
+  if (category) {
+    return category.color;
+  }
+
   switch (type) {
     case AnnotationType.HIGHLIGHT:
-      return highlightColor || 'rgba(255, 255, 0, 0.3)';
+      return 'rgba(255, 255, 0, 0.3)';
     case AnnotationType.UNDERLINE:
-      return underlineColor || 'rgba(0, 100, 255, 0.7)';
+      return 'rgba(0, 100, 255, 0.7)';
     case AnnotationType.STRIKEOUT:
-      return strikeoutColor || 'rgba(255, 0, 0, 0.5)';
+      return 'rgba(255, 0, 0, 0.5)';
     case AnnotationType.RECTANGLE:
-      return rectangleColor || 'rgba(255, 0, 0, 0.3)';
+      return 'rgba(255, 0, 0, 0.3)';
     case AnnotationType.DRAWING:
-      return drawingColor || 'rgba(255, 0, 0, 0.7)';
     case AnnotationType.HIGHLIGHTING:
-      return highlightingColor || 'rgba(255, 255, 0, 0.4)'; // Transparent yellow
+      return 'rgba(255, 0, 0, 0.7)';
     case AnnotationType.TEXT:
-      return textColor || 'rgba(0, 0, 0, 1)';
+      return 'rgba(0, 0, 0, 1)';
     case AnnotationType.COMMENT:
-      return commentColor || 'rgba(255, 255, 0, 0.7)';
+      return 'rgba(255, 255, 0, 0.7)';
     case AnnotationType.PIN:
-      return pinColor || 'rgba(249, 115, 22, 0.7)'; // Default orange
+      return 'rgba(249, 115, 22, 0.7)'; // Default orange
     default:
       return 'rgba(0, 0, 0, 1)';
   }
 };
 
-export const annotationModeToType = (mode: AnnotationMode): AnnotationType | null => {
+export const annotationModeToType = (mode: AnnotationMode): AnnotationType => {
   switch (mode) {
     case AnnotationMode.HIGHLIGHT:
       return AnnotationType.HIGHLIGHT;
@@ -78,7 +73,7 @@ export const annotationModeToType = (mode: AnnotationMode): AnnotationType | nul
     case AnnotationMode.PIN:
       return AnnotationType.PIN;
     default:
-      return null;
+      return AnnotationType.HIGHLIGHT;
   }
 };
 
@@ -107,85 +102,72 @@ export const pointsToSvgPath = (points: Point[]): string => {
   return path;
 };
 
-// Default ENEM category colors
-export const DEFAULT_CATEGORY_COLORS: Record<ENEMCategory, string> = {
-  [ENEMCategory.COMPETENCIA1]: 'rgba(255, 0, 0, 0.7)',     // Red
-  [ENEMCategory.COMPETENCIA2]: 'rgba(0, 176, 80, 0.7)',    // Green
-  [ENEMCategory.COMPETENCIA3]: 'rgba(0, 112, 192, 0.7)',   // Blue
-  [ENEMCategory.COMPETENCIA4]: 'rgba(255, 192, 0, 0.7)',   // Yellow
-  [ENEMCategory.COMPETENCIA5]: 'rgba(112, 48, 160, 0.7)',  // Purple
+// Define default category colors with numeric keys
+export const DEFAULT_CATEGORY_COLORS: Record<number, string> = {
+  1: '#FF5733', // Competencia 1
+  2: '#33FF57', // Competencia 2
+  3: '#3357FF', // Competencia 3
+  4: '#F333FF', // Competencia 4
+  5: '#FF33F3', // Competencia 5
+  0: '#777777', // Default/Other
 };
 
-// Get color based on category - now supports custom categories
+// Get color for a category
 export const getCategoryColor = (
-  category: CategoryType | undefined,
-  categoryColors?: Record<string, string>,
-  customCategories?: CategoryItem[]
+  category?: CategoryItem | null
 ): string => {
-  if (!category) return 'rgba(0, 0, 0, 1)';
+  if (!category) return DEFAULT_CATEGORY_COLORS[0]; // Default color
   
-  // First check if a custom color is provided in categoryColors
-  if (categoryColors && categoryColors[category]) {
-    return categoryColors[category];
+  // Use the color from the CategoryItem
+  if (category.color) {
+    return category.color;
   }
   
-  // Then check if this is a custom category with a color
-  if (customCategories) {
-    const customCategory = customCategories.find(c => c.id === category);
-    if (customCategory) {
-      return customCategory.color;
-    }
-  }
-  
-  // Finally, try the default ENEM categories
-  if (Object.values(ENEMCategory).includes(category as ENEMCategory)) {
-    return DEFAULT_CATEGORY_COLORS[category as ENEMCategory];
-  }
-  
-  // Default fallback
-  return 'rgba(0, 0, 0, 1)';
+  // Fallback to default colors if no color is specified
+  return DEFAULT_CATEGORY_COLORS[category.category] || DEFAULT_CATEGORY_COLORS[0];
 };
 
-// Get category display name - now supports custom categories
+// Get the display name for a category
 export const getCategoryDisplayName = (
-  category: CategoryType,
-  customCategories?: CategoryItem[]
+  category?: CategoryItem | null
 ): string => {
-  // First check if it's a custom category
-  if (customCategories) {
-    const customCategory = customCategories.find(c => c.id === category);
-    if (customCategory) {
-      return customCategory.displayName;
-    }
+  if (!category) return 'Sem categoria';
+  
+  // If we have a display name, use it
+  if (category.displayName) {
+    return category.displayName;
   }
   
-  // Then check if it's a default ENEM category
-  if (Object.values(ENEMCategory).includes(category as ENEMCategory)) {
-    switch (category as ENEMCategory) {
-      case ENEMCategory.COMPETENCIA1:
-        return 'C1 - Domínio da norma padrão';
-      case ENEMCategory.COMPETENCIA2:
-        return 'C2 - Compreensão da proposta';
-      case ENEMCategory.COMPETENCIA3:
-        return 'C3 - Argumentação';
-      case ENEMCategory.COMPETENCIA4:
-        return 'C4 - Mecanismos linguísticos';
-      case ENEMCategory.COMPETENCIA5:
-        return 'C5 - Proposta de intervenção';
-      default:
-        return 'Desconhecido';
-    }
+  // Default competency names if no display name is available
+  switch (category.category) {
+    case 1:
+      return 'Competência 1';
+    case 2:
+      return 'Competência 2';
+    case 3:
+      return 'Competência 3';
+    case 4:
+      return 'Competência 4';
+    case 5:
+      return 'Competência 5';
+    default:
+      return `Competência ${category.category}`;
   }
-  
-  // Fallback to the category id
-  return String(category);
 };
 
-// Format annotations to JSON
+// Convert annotations to JSON string
 export const annotationsToJSON = (annotations: Annotation[]): string => {
-  return JSON.stringify(annotations.map(annotation => ({
+  // Create a deep copy and serialize dates
+  const serializable = annotations.map(annotation => ({
     ...annotation,
     createdAt: annotation.createdAt.toISOString(),
     updatedAt: annotation.updatedAt ? annotation.updatedAt.toISOString() : undefined
-  })), null, 2);
+  }));
+  
+  return JSON.stringify(serializable);
+};
+
+// Calculate distance between two points
+export const distance = (p1: Point, p2: Point): number => {
+  return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
 }; 
