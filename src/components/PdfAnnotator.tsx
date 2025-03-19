@@ -218,15 +218,11 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         // If we have the annotation, select it
         selectAnnotation(annotation);
         
-        // Set position for the details dialog to center of the viewport
-        // This ensures it's visible even when called from outside
-        if (containerRef.current) {
-          const rect = containerRef.current.getBoundingClientRect();
-          setSelectedAnnotationPosition({
-            x: rect.left + rect.width / 2,
-            y: rect.top + 100 // Position it near the top but below the toolbar
-          });
-        }
+        // For selections from external list, we don't set a position
+        // This prevents the detail dialog from opening
+        // We only set setSelectedAnnotationPosition to null to ensure
+        // the dialog doesn't appear
+        setSelectedAnnotationPosition(null);
         
         // Scroll to the page containing this annotation if needed
         if (annotation.pageIndex + 1 !== currentPage) {
@@ -328,10 +324,13 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   const handleAnnotationClick = (annotation: Annotation, event?: React.MouseEvent) => {
-    // If we have a click event and we're in NONE mode, store the mouse position
+    // If we have a click event, it means the annotation was clicked directly in the PDF view
+    // so we should set the position for the detail dialog
     if (event && currentMode === AnnotationMode.NONE) {
       setSelectedAnnotationPosition({ x: event.clientX, y: event.clientY });
     } else {
+      // If we don't have an event, the annotation was likely not clicked directly
+      // so we don't set a position, which will prevent the dialog from opening
       setSelectedAnnotationPosition(null);
     }
     

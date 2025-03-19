@@ -5,6 +5,43 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.46] - 2025-03-19
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Modified annotation selection behavior from external lists
+  - When selecting an annotation from an external list or component, the annotation is now highlighted in the PDF view without opening the details dialog
+  - The annotation details dialog now only appears when annotations are clicked directly in the PDF view
+  - Provides a more intuitive user experience by separating selection from editing
+  - Implementation preserves all highlighting functionality while improving the UI flow
+
+## [0.1.45] - 2025-03-19
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.42] - 2025-03-19
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
 ## [0.1.41] - 2025-03-19
 
 ### Added
