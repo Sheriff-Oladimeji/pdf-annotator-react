@@ -11,6 +11,8 @@ interface AnnotationDetailsProps {
   position?: { x: number, y: number }; // Optional position for the dialog
   isNew?: boolean; // Flag to indicate if this is a newly created annotation
   customCategories?: CustomCategory[]; // Use CustomCategory for categories with tags
+  viewOnly?: boolean; // New prop to indicate view-only mode
+  onAnnotationsChange?: (annotations: Annotation[]) => void; // Optional callback when annotations change
 }
 
 export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
@@ -21,13 +23,25 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   position,
   isNew = false,
   customCategories = [],
+  viewOnly = false, // Default to false for backward compatibility
+  onAnnotationsChange,
 }) => {
-  const [isEditing, setIsEditing] = useState(isNew);
+  // Only allow editing mode if not in viewOnly mode
+  const [isEditing, setIsEditing] = useState(isNew && !viewOnly);
   const [content, setContent] = useState(annotation.content || '');
   const [selectedCategory, setSelectedCategory] = useState<CategoryItem | undefined>(annotation.category);
   const [tags, setTags] = useState<TagInterface[]>(annotation.tags || []);
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [selectedCompetencia, setSelectedCompetencia] = useState<number | null>(null);
+
+  // Function to handle setting editing state that respects viewOnly mode
+  const handleSetEditing = (editing: boolean) => {
+    // Only allow switching to edit mode if not in viewOnly mode
+    if (editing && viewOnly) {
+      return; // Prevent editing in viewOnly mode
+    }
+    setIsEditing(editing);
+  };
 
   // Category color comes directly from the selected category
   const categoryColor = useMemo(() => {
@@ -87,18 +101,37 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   };
 
   const handleSave = () => {
+    const updatedAnnotation = { 
+      ...annotation,
+      content,
+      category: selectedCategory,
+      color: selectedCategory?.color || annotation.color,
+      tags
+    };
+    
     onUpdate(annotation.id, { 
       content,
       category: selectedCategory,
       color: selectedCategory?.color || annotation.color,
       tags
     });
-    setIsEditing(false);
+    
+    // If parent component is handling the annotations array
+    if (onAnnotationsChange) {
+      onAnnotationsChange([updatedAnnotation]);
+    }
+    
+    handleSetEditing(false);
   };
 
   const handleDelete = () => {
     if (window.confirm('Tem certeza que deseja excluir esta anotação?')) {
       onDelete(annotation.id);
+      
+      // If parent component is handling the annotations array
+      if (onAnnotationsChange) {
+        onAnnotationsChange([]);
+      }
     }
   };
 
@@ -132,7 +165,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
 
   return (
     <div
-      className="fixed w-[300px] bg-white shadow-lg rounded-md p-4 z-50 max-h-[90vh] overflow-auto"
+      className={`fixed bg-white shadow-lg rounded-md p-4 z-50 max-h-[90vh] overflow-auto ${showTagSelector && isEditing ? 'w-auto' : 'w-[300px]'}`}
       style={{
         top: position ? `${position.y}px` : '70px',
         right: position ? 'auto' : '20px',
@@ -141,18 +174,12 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         borderTop: categoryColor ? `4px solid ${categoryColor}` : undefined,
       }}
     >
-      <div
-        className="flex justify-between items-center mb-2.5 sticky top-0 bg-white z-10"
-      >
-        <h3
-          className="m-0 text-base font-bold"
-          style={{ color: categoryColor || 'inherit' }}
-        >
-          Anotação
-        </h3>
+      {/* Header with close button in top-right */}
+      <div className="flex justify-end mb-2.5 sticky top-0 bg-white z-10">
         <button
           onClick={onClose}
           className="bg-transparent border-0 text-xl cursor-pointer p-0 flex items-center justify-center"
+          aria-label="Fechar"
         >
           <IoClose size={22} />
         </button>
@@ -163,13 +190,10 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         <div>
           {availableTagsForCategory.length > 0 && selectedCategory && showTagSelector ? (
             // Two-column layout when tag selector is visible
-            <div className="flex flex-row space-x-3">
+            <div className="flex flex-row space-x-4 w-[600px]">
               {/* Left column: Competência and Anotações */}
-              <div className="flex-1">
+              <div className="w-1/2">
                 <div className="mb-2.5">
-                  <label htmlFor="category-select" className="block mb-1.5">
-                    <strong>Competência:</strong>
-                  </label>
                   <select
                     id="category-select"
                     value={selectedCategory?.category.toString() || ''}
@@ -207,7 +231,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
               </div>
               
               {/* Right column: Tag selector */}
-              <div className="flex-1">
+              <div className="w-1/2">
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">
                     <label className="font-medium text-gray-700">
@@ -252,8 +276,8 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                   {/* Display selected tags */}
                   {tags.length > 0 && (
                     <div className="mt-3">
-                      <strong className="block mb-1.5">Tags Selecionadas:</strong>
-                      <div className="flex flex-wrap gap-1 max-h-[100px] overflow-y-auto p-1">
+                      <p className="text-xs text-gray-500 mb-2">Tags Selecionadas:</p>
+                      <div className="flex flex-wrap gap-1">
                         {tags.map((tag, index) => (
                           <div
                             key={index}
@@ -276,12 +300,25 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
               </div>
             </div>
           ) : (
-            // Single column layout when tag selector is not visible
             <>
-              <div className="mb-2.5">
-                <label htmlFor="category-select" className="block mb-1.5">
-                  <strong>Competência:</strong>
-                </label>
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="category-select" className="block">
+                    <strong>Competência:</strong>
+                  </label>
+                  
+                  {availableTagsForCategory.length > 0 && selectedCategory && (
+                    <button 
+                      type="button"
+                      onClick={() => setShowTagSelector(true)}
+                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center"
+                    >
+                      <IoAdd size={14} className="mr-1" />
+                      Mostrar Tags ({tags.length} selecionadas)
+                    </button>
+                  )}
+                </div>
+                
                 <select
                   id="category-select"
                   value={selectedCategory?.category.toString() || ''}
@@ -304,45 +341,29 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                 </select>
               </div>
 
-              {/* Tag Selection UI Button */}
-              {availableTagsForCategory.length > 0 && selectedCategory && (
+              {/* Display selected tags */}
+              {tags.length > 0 && (
                 <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="font-medium text-gray-700">
-                      <strong>Tags:</strong>
-                    </label>
-                    <button 
-                      type="button"
-                      onClick={() => setShowTagSelector(true)}
-                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center"
-                    >
-                      <IoAdd size={14} className="mr-1" />
-                      Adicionar Tags
-                    </button>
-                  </div>
-                  
-                  {/* Display selected tags */}
-                  {tags.length > 0 && (
-                    <div className="mb-2">
-                      <div className="flex flex-wrap gap-1 max-h-[100px] overflow-y-auto p-1">
-                        {tags.map((tag, index) => (
-                          <div
-                            key={index}
-                            className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center mb-1 mr-1"
-                          >
-                            {tag.tag}
-                            <button
-                              type="button"
-                              onClick={() => toggleTag(tag)}
-                              className="ml-1 text-gray-600 hover:text-red-500"
-                            >
-                              <IoClose size={14} />
-                            </button>
-                          </div>
-                        ))}
+                  <label className="block mb-1.5">
+                    <strong>Tags Selecionadas:</strong>
+                  </label>
+                  <div className="flex flex-wrap">
+                    {tags.map((tag, index) => (
+                      <div
+                        key={index}
+                        className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center mb-1 mr-1"
+                      >
+                        {tag.tag}
+                        <button
+                          type="button"
+                          onClick={() => toggleTag(tag)}
+                          className="ml-1 text-gray-600 hover:text-red-500"
+                        >
+                          <IoClose size={14} />
+                        </button>
                       </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -363,7 +384,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
 
           <div className="flex space-x-2 justify-end">
             <button
-              onClick={() => setIsEditing(false)}
+              onClick={() => handleSetEditing(false)}
               className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-md flex items-center"
             >
               <IoArrowBack size={16} className="mr-1" />
@@ -384,7 +405,6 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
           <div className="mb-3">
             {annotation.category && (
               <div className="mb-2">
-                <strong>Categoria:</strong> 
                 <span 
                   className="ml-1 px-2 py-0.5 rounded inline-block"
                   style={{ 
@@ -430,22 +450,25 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             </div>}
           </div>
 
-          <div className="flex space-x-2 justify-end">
-            <button
-              onClick={handleDelete}
-              className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-md flex items-center"
-            >
-              <IoTrash size={16} className="mr-1" />
-              Excluir
-            </button>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md flex items-center"
-            >
-              <IoPencil size={16} className="mr-1" />
-              Editar
-            </button>
-          </div>
+          {/* Only show action buttons if not in view-only mode */}
+          {!viewOnly && (
+            <div className="flex space-x-2 justify-end">
+              <button
+                onClick={handleDelete}
+                className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-md flex items-center"
+              >
+                <IoTrash size={16} className="mr-1" />
+                Excluir
+              </button>
+              <button
+                onClick={() => handleSetEditing(true)}
+                className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md flex items-center"
+              >
+                <IoPencil size={16} className="mr-1" />
+                Editar
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

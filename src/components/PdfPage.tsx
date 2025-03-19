@@ -49,23 +49,43 @@ export const PdfPage: React.FC<PdfPageProps> = ({
   const [pageHeight, setPageHeight] = useState<number>(0);
   const [pageWidth, setPageWidth] = useState<number>(0);
   const [isRendered, setIsRendered] = useState<boolean>(false);
+  const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const renderPage = async () => {
-      if (!canvasRef.current) return;
+      if (!canvasRef.current || !isMounted) return;
 
       try {
+        // Cancel any existing render tasks
+        if (renderTaskRef.current) {
+          await renderTaskRef.current.cancel();
+          renderTaskRef.current = null;
+        }
+        
+        // Set rendered state to false to hide annotation layer during re-render
+        setIsRendered(false);
+        
+        // Get the page
         const page = await pdfDocument.getPage(pageNumber);
         const viewport = page.getViewport({ 
           scale, 
           rotation: forceRotation !== null ? forceRotation : undefined 
         });
         
+        // Ensure we're still mounted
+        if (!isMounted || !canvasRef.current) return;
+        
         const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d', { alpha: false });
         
         if (!context) return;
         
+        // Clear the canvas before rendering
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Set canvas dimensions
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         
@@ -75,16 +95,40 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         const renderContext = {
           canvasContext: context,
           viewport,
+          enableWebGL: true,
         };
         
-        await page.render(renderContext).promise;
-        setIsRendered(true);
+        // Store the render task reference
+        renderTaskRef.current = page.render(renderContext);
+        
+        // Wait for the render to complete
+        await renderTaskRef.current.promise;
+        
+        // If still mounted, mark as rendered
+        if (isMounted) {
+          setIsRendered(true);
+          renderTaskRef.current = null;
+        }
       } catch (error) {
-        console.error('Error rendering PDF page:', error);
+        // Only log errors if they're not cancellation errors
+        if (error instanceof Error && error.message !== 'Rendering cancelled') {
+          console.error('Error rendering PDF page:', error);
+        }
       }
     };
 
     renderPage();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      
+      // Cancel any pending render tasks
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
+    };
   }, [pdfDocument, pageNumber, scale, forceRotation]);
 
   const getRelativeCoordinates = (event: React.PointerEvent): Point => {
@@ -124,7 +168,7 @@ export const PdfPage: React.FC<PdfPageProps> = ({
     onPointerUp(point, pageNumber - 1);
 
     // Handle text click if in text mode
-    if (onTextClick) {
+    if (onTextClick && currentMode === AnnotationMode.TEXT) {
       onTextClick(point, pageNumber - 1);
     }
   };
@@ -135,8 +179,8 @@ export const PdfPage: React.FC<PdfPageProps> = ({
     
     event.preventDefault();
     const point = {
-      x: event.clientX - (containerRef.current?.getBoundingClientRect().left || 0),
-      y: event.clientY - (containerRef.current?.getBoundingClientRect().top || 0),
+      x: (event.clientX - (containerRef.current?.getBoundingClientRect().left || 0)) / scale,
+      y: (event.clientY - (containerRef.current?.getBoundingClientRect().top || 0)) / scale,
     };
     onCommentAdd(point, pageNumber - 1);
   };
@@ -161,6 +205,8 @@ export const PdfPage: React.FC<PdfPageProps> = ({
       <canvas
         ref={canvasRef}
         className="block"
+        width={pageWidth || 1}
+        height={pageHeight || 1}
       />
       {isRendered && (
         <AnnotationLayer

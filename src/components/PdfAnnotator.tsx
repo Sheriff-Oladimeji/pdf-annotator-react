@@ -12,6 +12,7 @@ import { annotationsToJSON } from '../utils';
 // Define a ref type for exposing methods
 export interface PdfAnnotatorRef {
   getAnnotationsJSON: () => string;
+  selectAnnotationById: (annotationId: string) => boolean; // Returns true if the annotation was found and selected
 }
 
 export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
@@ -42,6 +43,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   pdfWorkerSrc,
   fitToWidth = true, // New prop to control whether to fit to width
   defaultThickness,
+  viewOnly = false, // New prop to control whether the component is in view-only mode
 }, ref) => {
   const [pdfDocument, setPdfDocument] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
@@ -99,16 +101,19 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   
   // Modified onAnnotationCreate to capture the position when a new annotation is created
   const handleAnnotationCreate = (newAnnotation: Annotation) => {
-    // Select the new annotation to display details
-    selectAnnotation(newAnnotation);
-    
-    // Set position for the details dialog to last mouse position
-    if (lastMousePosition) {
-      setSelectedAnnotationPosition(lastMousePosition);
+    // Don't select annotation in view-only mode
+    if (!viewOnly) {
+      // Select the new annotation to display details
+      selectAnnotation(newAnnotation);
+      
+      // Set position for the details dialog to last mouse position
+      if (lastMousePosition) {
+        setSelectedAnnotationPosition(lastMousePosition);
+      }
+      
+      // Set isNewAnnotation flag to true so details opens in edit mode
+      setIsNewAnnotation(true);
     }
-    
-    // Set isNewAnnotation flag to true so details opens in edit mode
-    setIsNewAnnotation(true);
     
     // Call the original onAnnotationCreate callback
     if (onAnnotationCreate) {
@@ -204,7 +209,35 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
 
   // Expose the getAnnotationsJSON method via ref
   useImperativeHandle(ref, () => ({
-    getAnnotationsJSON: () => annotationsToJSON(localAnnotations)
+    getAnnotationsJSON: () => annotationsToJSON(localAnnotations),
+    selectAnnotationById: (annotationId: string) => {
+      // Find the annotation by ID
+      const annotation = localAnnotations.find(ann => ann.id === annotationId);
+      
+      if (annotation) {
+        // If we have the annotation, select it
+        selectAnnotation(annotation);
+        
+        // Set position for the details dialog to center of the viewport
+        // This ensures it's visible even when called from outside
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          setSelectedAnnotationPosition({
+            x: rect.left + rect.width / 2,
+            y: rect.top + 100 // Position it near the top but below the toolbar
+          });
+        }
+        
+        // Scroll to the page containing this annotation if needed
+        if (annotation.pageIndex + 1 !== currentPage) {
+          handlePageChange(annotation.pageIndex + 1);
+        }
+        
+        return true;
+      }
+      
+      return false;
+    }
   }));
 
   useEffect(() => {
@@ -275,18 +308,22 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   const handleAnnotationModeChange = (mode: AnnotationMode) => {
-    setMode(mode);
-    
-    if (onAnnotationModeChange) {
-      onAnnotationModeChange(mode);
+    if (!viewOnly) {
+      setMode(mode);
+      
+      if (onAnnotationModeChange) {
+        onAnnotationModeChange(mode);
+      }
     }
   };
 
   const handleCategoryChange = (category: CategoryItem) => {
-    setSelectedCategory(category);
-    
-    if (onCategoryChange) {
-      onCategoryChange(category);
+    if (!viewOnly) {
+      setSelectedCategory(category);
+      
+      if (onCategoryChange) {
+        onCategoryChange(category);
+      }
     }
   };
 
@@ -302,10 +339,12 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   const handleAnnotationUpdate = (id: string, updates: Partial<Annotation>) => {
-    updateAnnotation(id, updates);
-    
-    // Reset isNewAnnotation flag after an update
-    setIsNewAnnotation(false);
+    if (!viewOnly) {
+      updateAnnotation(id, updates);
+      
+      // Reset isNewAnnotation flag after an update
+      setIsNewAnnotation(false);
+    }
   };
 
   const handleCommentSubmit = (content: string) => {
@@ -498,22 +537,25 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   return (
-    <div className="pdf-annotator bg-gray-100 min-h-screen">
-      <ToolBar
-        currentMode={currentMode}
-        onModeChange={handleAnnotationModeChange}
-        currentPage={currentPage}
-        numPages={numPages}
-        onPageChange={handlePageChange}
-        currentCategory={selectedCategory}
-        onCategoryChange={handleCategoryChange}
-        customCategories={categoryItems}
-        scale={scale}
-        onScaleChange={handleScaleChange}
-        onFitToWidth={handleFitToWidth}
-        currentThickness={annotationThickness}
-        onThicknessChange={handleThicknessChange}
-      />
+    <div className="pdf-annotator bg-gray-100 min-h-screen relative">
+      <div className="sticky top-0 z-10 shadow-md bg-white">
+        <ToolBar
+          currentMode={currentMode}
+          onModeChange={handleAnnotationModeChange}
+          currentPage={currentPage}
+          numPages={numPages}
+          onPageChange={handlePageChange}
+          currentCategory={selectedCategory}
+          onCategoryChange={handleCategoryChange}
+          customCategories={categoryItems}
+          scale={scale}
+          onScaleChange={handleScaleChange}
+          onFitToWidth={handleFitToWidth}
+          currentThickness={annotationThickness}
+          onThicknessChange={handleThicknessChange}
+          viewOnly={viewOnly}
+        />
+      </div>
       
       <div className="overflow-auto p-4 flex flex-col items-center" ref={containerRef}>
         {renderPages()}
@@ -522,7 +564,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       {/* Annotation Details Panel when an annotation is selected */}
       {selectedAnnotation && (
         <AnnotationDetails
-          key={`annotation-details-${selectedAnnotation.id}-${selectedAnnotation.updatedAt?.getTime() || 0}`}
+          key={`annotation-details-${selectedAnnotation.id}`}
           annotation={selectedAnnotation}
           onClose={() => selectAnnotation(null)}
           onUpdate={handleAnnotationUpdate}
@@ -530,6 +572,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
           position={selectedAnnotationPosition || undefined}
           isNew={isNewAnnotation}
           customCategories={customCategories}
+          viewOnly={viewOnly}
+          onAnnotationsChange={onAnnotationsChange}
         />
       )}
 

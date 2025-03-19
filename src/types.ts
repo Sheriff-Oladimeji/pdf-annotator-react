@@ -88,6 +88,7 @@ export type PDFAnnotatorProps = {
   pdfWorkerSrc?: string;
   fitToWidth?: boolean;
   defaultThickness?: number; // Default thickness for annotations
+  viewOnly?: boolean; // Whether the component is in view-only mode (cannot edit annotations)
 } & AnnotationEventCallbacks;
 
 
