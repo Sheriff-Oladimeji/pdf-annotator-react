@@ -5,7 +5,17 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.49] - 2025-03-20
+## [0.1.51] - 2025-03-20
+
+### Fixed
+- Fixed annotation dialog appearing and closing issues
+  - Resolved problem where annotation dialog would not appear when selecting annotations
+  - Added proper delay to click-away behavior to prevent immediate closing of newly opened dialogs
+  - Improved dialog detection logic with multiple selectors for better reliability
+  - Enhanced the scroll handling to prevent dialog from disappearing unexpectedly
+  - Added data-testid attributes for more reliable dialog identification
+
+## [0.1.50] - 2025-03-20
 
 ### Added
 - Category filtering for annotations
@@ -28,7 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added fallback positioning for cases when page containers aren't immediately available
   - Implemented auto-positioning after page scrolling to ensure dialog stays related to the annotation
   - Enhanced user experience by eliminating cases where dialog appears at unrelated positions
-
 
 ## [0.1.46] - 2025-03-19
 

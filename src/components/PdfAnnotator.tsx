@@ -225,7 +225,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       if (currentMode !== AnnotationMode.NONE) return;
       
       // Check if click is inside the annotation details dialog
-      const detailsDialog = document.querySelector('.annotation-details');
+      const detailsDialog = document.querySelector('.annotation-details, [data-testid="annotation-details-dialog"]');
       if (detailsDialog && detailsDialog.contains(event.target as Node)) {
         return;
       }
@@ -242,19 +242,43 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       }
     };
     
-    // Add the event listeners
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-    }
-    document.addEventListener('click', handleClickOutside);
+    // We need a smaller timeout to let the selection events complete before we start listening for outside clicks
+    // This prevents the click handler from immediately closing a newly opened dialog
+    let clickListener: ((event: MouseEvent) => void) | null = null;
     
-    // Clean up event listeners when component unmounts
-    return () => {
+    if (selectedAnnotation) {
+      // Only add click listener when there's a selected annotation
+      // And do it after a small delay to prevent immediate closing
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+        clickListener = handleClickOutside;
+      }, 300);
+      
+      // Add scroll listener immediately
+      if (container) {
+        container.addEventListener('scroll', handleScroll);
+      }
+      
+      // Clean up both the timeout and any added listeners
+      return () => {
+        clearTimeout(timeoutId);
+        if (container) {
+          container.removeEventListener('scroll', handleScroll);
+        }
+        if (clickListener) {
+          document.removeEventListener('click', clickListener);
+        }
+      };
+    } else {
+      // Clean up any existing listeners when there's no selected annotation
       if (container) {
         container.removeEventListener('scroll', handleScroll);
       }
-      document.removeEventListener('click', handleClickOutside);
-    };
+      if (clickListener) {
+        document.removeEventListener('click', clickListener);
+      }
+      return () => {};
+    }
   }, [selectedAnnotation, selectAnnotation, currentMode]);
 
   // Expose the getAnnotationsJSON method via ref

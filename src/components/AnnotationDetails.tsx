@@ -166,6 +166,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   return (
     <div
       className={`fixed bg-white shadow-lg rounded-md p-4 z-50 max-h-[90vh] overflow-auto annotation-details ${showTagSelector && isEditing ? 'w-auto' : 'w-[300px]'}`}
+      data-testid="annotation-details-dialog"
       style={{
         top: position ? `${position.y}px` : '70px',
         right: position ? 'auto' : '20px',
