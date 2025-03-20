@@ -207,6 +207,56 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     }
   }, [selectedAnnotation]);
 
+  // Add event listeners to handle closing the dialog on scroll and clicks outside annotations
+  useEffect(() => {
+    // Reference to the container element for scroll handling
+    const container = containerRef.current;
+    
+    // Handler to close the annotation details when scrolling
+    const handleScroll = () => {
+      if (selectedAnnotation) {
+        selectAnnotation(null);
+      }
+    };
+    
+    // Handler to close annotation details when clicking outside annotations and the dialog
+    const handleClickOutside = (event: MouseEvent) => {
+      // Don't close if we're in any annotation mode other than selection
+      if (currentMode !== AnnotationMode.NONE) return;
+      
+      // Check if click is inside the annotation details dialog
+      const detailsDialog = document.querySelector('.annotation-details');
+      if (detailsDialog && detailsDialog.contains(event.target as Node)) {
+        return;
+      }
+      
+      // Check if click is on an annotation
+      const isAnnotationClick = event.target && (
+        (event.target as Element).closest('.annotation') || 
+        (event.target as Element).classList.contains('annotation')
+      );
+      
+      // If not clicking on annotation or dialog, close the details
+      if (!isAnnotationClick && selectedAnnotation) {
+        selectAnnotation(null);
+      }
+    };
+    
+    // Add the event listeners
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+    }
+    document.addEventListener('click', handleClickOutside);
+    
+    // Clean up event listeners when component unmounts
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [selectedAnnotation, selectAnnotation, currentMode]);
+
   // Expose the getAnnotationsJSON method via ref
   useImperativeHandle(ref, () => ({
     getAnnotationsJSON: () => annotationsToJSON(localAnnotations),

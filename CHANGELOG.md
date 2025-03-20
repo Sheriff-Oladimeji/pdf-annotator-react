@@ -16,7 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Clean UI integration with existing category dropdown
 
 ### Changed
-- 
+- Enhanced annotation dialog user experience
+  - Added automatic dialog closing when scrolling to improve document navigation
+  - Implemented click-away behavior to close the dialog when clicking outside annotations
+  - Improved overall usability by making the dialog less intrusive during PDF browsing
+  - Better focus management for annotation selection and editing workflows
 
 ### Fixed
 - Improved annotation details dialog positioning
