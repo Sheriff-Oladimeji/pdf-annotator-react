@@ -5,6 +5,27 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.49] - 2025-03-20
+
+### Added
+- Category filtering for annotations
+  - Added ability to filter annotations by category using the category dropdown
+  - When a category is selected, only annotations with that category are displayed
+  - Added a clear button to remove the filter and display all annotations
+  - Improved user experience for viewing specific categories of annotations
+  - Clean UI integration with existing category dropdown
+
+### Changed
+- 
+
+### Fixed
+- Improved annotation details dialog positioning
+  - When selecting an annotation from an external list, the details dialog now consistently positions at 20% from the top-left of the annotation
+  - Added fallback positioning for cases when page containers aren't immediately available
+  - Implemented auto-positioning after page scrolling to ensure dialog stays related to the annotation
+  - Enhanced user experience by eliminating cases where dialog appears at unrelated positions
+
+
 ## [0.1.46] - 2025-03-19
 
 ### Added
@@ -14,11 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 
 
 ### Fixed
-- Modified annotation selection behavior from external lists
-  - When selecting an annotation from an external list or component, the annotation is now highlighted in the PDF view without opening the details dialog
-  - The annotation details dialog now only appears when annotations are clicked directly in the PDF view
-  - Provides a more intuitive user experience by separating selection from editing
-  - Implementation preserves all highlighting functionality while improving the UI flow
+- Improved annotation selection behavior from external lists
+  - When selecting an annotation from an external list or component, the annotation is now highlighted in the PDF view
+  - The annotation details dialog now appears next to the selected annotation for better context
+  - Provides a more intuitive user experience with consistent positioning
+  - Implementation ensures the dialog doesn't obscure the annotation being referenced
 
 ## [0.1.45] - 2025-03-19
 

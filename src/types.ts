@@ -73,7 +73,7 @@ export type PDFAnnotatorProps = {
   annotationMode?: AnnotationMode;
   onAnnotationModeChange?: (mode: AnnotationMode) => void;
   currentCategory?: CategoryItem; // Current selected category
-  onCategoryChange?: (category: CategoryItem) => void; // Callback when category changes
+  onCategoryChange?: (category: CategoryItem | undefined) => void; // Callback when category changes
   onAnnotationsChange?: (annotations: Annotation[]) => void; // Callback when annotations array changes
   customCategories?: CustomCategory[]; // Categories with their associated tags
   highlightColor?: string;

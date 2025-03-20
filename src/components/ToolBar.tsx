@@ -29,7 +29,7 @@ interface ToolBarProps {
   numPages: number;
   onPageChange: (page: number) => void;
   currentCategory?: CategoryItem;
-  onCategoryChange?: (category: CategoryItem) => void;
+  onCategoryChange?: (category: CategoryItem | undefined) => void;
   customCategories?: CategoryItem[];
   scale: number;
   onScaleChange: (scale: number) => void;
@@ -104,7 +104,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
         {!viewOnly && (
           <div className="flex items-center space-x-4">
             {/* Category selector dropdown */}
-            <div className="relative">
+            <div className="relative flex items-center">
               <select
                 value={currentCategory?.category.toString() || ''}
                 onChange={handleCategoryChange}
@@ -113,16 +113,27 @@ export const ToolBar: React.FC<ToolBarProps> = ({
                   borderBottom: currentCategory ? `3px solid ${currentCategory.color || 'transparent'}` : undefined
                 }}
               >
-                <option value="">Selecionar Categoria</option>
+                <option value="">Filtrar por Categoria</option>
                 {customCategories.map((category) => (
                   <option key={category.category} value={category.category}>
                     {category.displayName}
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <div className="pointer-events-none absolute right-0 flex items-center px-2 text-gray-700" style={{ right: "0.5rem" }}>
                 <IoCaretDown className="h-4 w-4" />
               </div>
+              
+              {currentCategory && (
+                <button
+                  onClick={() => onCategoryChange && onCategoryChange(undefined)}
+                  className="ml-2 p-1 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center text-xs"
+                  title="Limpar filtro"
+                >
+                  <IoRemoveOutline size={14} className="mr-1" />
+                  Limpar
+                </button>
+              )}
             </div>
 
             {/* Thickness selector - only show when in drawing, highlighting or rectangle mode */}

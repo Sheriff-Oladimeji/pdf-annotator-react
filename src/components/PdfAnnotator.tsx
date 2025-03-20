@@ -218,15 +218,54 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         // If we have the annotation, select it
         selectAnnotation(annotation);
         
-        // For selections from external list, we don't set a position
-        // This prevents the detail dialog from opening
-        // We only set setSelectedAnnotationPosition to null to ensure
-        // the dialog doesn't appear
-        setSelectedAnnotationPosition(null);
-        
         // Scroll to the page containing this annotation if needed
         if (annotation.pageIndex + 1 !== currentPage) {
           handlePageChange(annotation.pageIndex + 1);
+        }
+        
+        // Set position for the details dialog based on the annotation's position
+        // Find the page container where the annotation is rendered
+        const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
+        
+        if (pageContainer) {
+          // If we found the page container, calculate position based on annotation coordinates
+          const rect = pageContainer.getBoundingClientRect();
+          // Calculate the actual position of the annotation on screen
+          const annotationX = rect.left + (annotation.rect.x * scale);
+          const annotationY = rect.top + (annotation.rect.y * scale);
+          
+          // Position the dialog at 20% from the top left of the annotation
+          setSelectedAnnotationPosition({
+            x: annotationX + (annotation.rect.width * scale * 0.2),
+            y: annotationY + (annotation.rect.height * scale * 0.2)
+          });
+        } else {
+          // If we can't find the page container yet (e.g., page not rendered), 
+          // use a more reliable fallback: center the dialog in the viewport
+          // This ensures the dialog is always visible even if page isn't rendered yet
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          
+          setSelectedAnnotationPosition({
+            x: viewportWidth * 0.4, // 40% from left
+            y: viewportHeight * 0.3  // 30% from top
+          });
+          
+          // When the page becomes available (after scrolling), update the position
+          // Schedule a position update after a short delay to allow rendering
+          setTimeout(() => {
+            const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
+            if (pageContainer) {
+              const rect = pageContainer.getBoundingClientRect();
+              const annotationX = rect.left + (annotation.rect.x * scale);
+              const annotationY = rect.top + (annotation.rect.y * scale);
+              
+              setSelectedAnnotationPosition({
+                x: annotationX + (annotation.rect.width * scale * 0.2),
+                y: annotationY + (annotation.rect.height * scale * 0.2)
+              });
+            }
+          }, 300); // Short delay to allow page to render
         }
         
         return true;
@@ -313,7 +352,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     }
   };
 
-  const handleCategoryChange = (category: CategoryItem) => {
+  const handleCategoryChange = (category: CategoryItem | undefined) => {
     if (!viewOnly) {
       setSelectedCategory(category);
       
@@ -477,6 +516,11 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const renderPages = () => {
     if (!pdfDocument) return null;
 
+    // Filter annotations by category if a category is selected
+    const filteredAnnotations = selectedCategory 
+      ? localAnnotations.filter(a => a.category?.category === selectedCategory.category)
+      : localAnnotations;
+
     const pages = [];
     for (let i = 1; i <= numPages; i++) {
       if (i === currentPage || i === currentPage - 1 || i === currentPage + 1) {
@@ -486,7 +530,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
             pdfDocument={pdfDocument}
             pageNumber={i}
             scale={scale}
-            annotations={localAnnotations.filter(a => a.pageIndex === i - 1)}
+            annotations={filteredAnnotations.filter(a => a.pageIndex === i - 1)}
             onAnnotationClick={handleAnnotationClick}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
