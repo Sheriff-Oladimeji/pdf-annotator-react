@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.51] - 2025-03-20
 
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.51] - 2025-03-20
+
 ### Fixed
 - Fixed annotation dialog appearing and closing issues
   - Resolved problem where annotation dialog would not appear when selecting annotations

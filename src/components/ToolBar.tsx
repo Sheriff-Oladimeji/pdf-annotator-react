@@ -101,7 +101,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
     <div className="toolbar bg-white transition-shadow duration-200">
       {/* Main toolbar with essential tools */}
       <div className="flex flex-wrap items-center justify-between px-4 py-2 border-b border-gray-200">
-        {!viewOnly && (
+        { (
           <div className="flex items-center space-x-4">
             {/* Category selector dropdown */}
             <div className="relative flex items-center">
@@ -137,7 +137,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
             </div>
 
             {/* Thickness selector - only show when in drawing, highlighting or rectangle mode */}
-            {shouldShowThicknessSelector && (
+            {!viewOnly && shouldShowThicknessSelector && (
               <div className="flex items-center space-x-2 bg-white border border-gray-300 rounded-md px-2 py-1">
                 <FaSlidersH size={14} className="text-gray-600" />
                 <span className="text-xs text-gray-700 mr-1">Espessura:</span>
