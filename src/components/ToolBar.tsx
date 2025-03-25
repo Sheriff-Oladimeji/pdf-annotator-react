@@ -21,6 +21,7 @@ import {
   FaMarker,
   FaSlidersH
 } from 'react-icons/fa';
+import ThicknessDropdown from './ThicknessDropdown';
 
 interface ToolBarProps {
   currentMode: AnnotationMode;
@@ -51,7 +52,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   scale,
   onScaleChange,
   onFitToWidth,
-  currentThickness = 2,
+  currentThickness = 8,
   onThicknessChange,
   viewOnly = false,
 }) => {
@@ -98,9 +99,9 @@ export const ToolBar: React.FC<ToolBarProps> = ({
   ].includes(currentMode);
 
   return (
-    <div className="toolbar bg-white transition-shadow duration-200">
+    <div className="transition-shadow duration-200 bg-white toolbar" style={{ height: '60px' }}>
       {/* Main toolbar with essential tools */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-2 border-b border-gray-200">
+      <div className="flex flex-wrap items-center justify-between h-full px-4 py-2 border-b border-gray-200">
         { (
           <div className="flex items-center space-x-4">
             {/* Category selector dropdown */}
@@ -120,14 +121,14 @@ export const ToolBar: React.FC<ToolBarProps> = ({
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute right-0 flex items-center px-2 text-gray-700" style={{ right: "0.5rem" }}>
-                <IoCaretDown className="h-4 w-4" />
+              <div className="absolute right-0 flex items-center px-2 text-gray-700 pointer-events-none" style={{ right: "0.5rem" }}>
+                <IoCaretDown className="w-4 h-4" />
               </div>
               
               {currentCategory && (
                 <button
                   onClick={() => onCategoryChange && onCategoryChange(undefined)}
-                  className="ml-2 p-1 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center text-xs"
+                  className="flex items-center p-1 ml-2 text-xs bg-gray-100 rounded-md hover:bg-gray-200"
                   title="Limpar filtro"
                 >
                   <IoRemoveOutline size={14} className="mr-1" />
@@ -138,28 +139,32 @@ export const ToolBar: React.FC<ToolBarProps> = ({
 
             {/* Thickness selector - only show when in drawing, highlighting or rectangle mode */}
             {!viewOnly && shouldShowThicknessSelector && (
-              <div className="flex items-center space-x-2 bg-white border border-gray-300 rounded-md px-2 py-1">
-                <FaSlidersH size={14} className="text-gray-600" />
-                <span className="text-xs text-gray-700 mr-1">Espessura:</span>
-                {[1, 2, 4, 8, 12].map(thickness => (
-                  <button
-                    key={thickness}
-                    onClick={() => handleThicknessChange(thickness)}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      currentThickness === thickness ? 'bg-blue-100 border border-blue-400' : 'hover:bg-gray-100'
-                    }`}
-                    title={`Espessura ${thickness}px`}
-                  >
-                    <div 
-                      className="bg-gray-700 rounded-full" 
-                      style={{ 
-                        width: `${Math.min(thickness * 1.5, 16)}px`, 
-                        height: `${Math.min(thickness * 1.5, 16)}px` 
-                      }}
-                    />
-                  </button>
-                ))}
-              </div>
+              <ThicknessDropdown
+                currentThickness={currentThickness}
+                handleThicknessChange={handleThicknessChange}
+              />
+              // <div className="flex items-center px-2 py-1 space-x-2 bg-white border border-gray-300 rounded-md">
+              //   <FaSlidersH size={14} className="text-gray-600" />
+              //   <span className="mr-1 text-xs text-gray-700">Espessura:</span>
+              //   {[4, 8, 12, 16].map(thickness => (
+              //     <button
+              //       key={thickness}
+              //       onClick={() => handleThicknessChange(thickness)}
+              //       className={`w-6 h-6 rounded-full flex items-center justify-center ${
+              //         currentThickness === thickness ? 'bg-blue-100 border border-blue-400' : 'hover:bg-gray-100'
+              //       }`}
+              //       title={`Espessura ${thickness}px`}
+              //     >
+              //       <div 
+              //         className="bg-gray-700 rounded-full" 
+              //         style={{ 
+              //           width: `${Math.min(thickness * 1.5, 16)}px`, 
+              //           height: `${Math.min(thickness * 1.5, 16)}px` 
+              //         }}
+              //       />
+              //     </button>
+              //   ))}
+              // </div>
             )}
           </div>
         )}
@@ -176,7 +181,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               <IoHandRightOutline size={18} />
             </button>
             
-            <div className="h-8 border-r border-gray-300 mx-1"></div>
+            <div className="h-8 mx-1 border-r border-gray-300"></div>
             
             <button
               className={`p-2 rounded-md border border-gray-300 ${
@@ -188,7 +193,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               <FaStrikethrough size={16} />
             </button>
             
-            <div className="h-8 border-r border-gray-300 mx-1"></div>
+            <div className="h-8 mx-1 border-r border-gray-300"></div>
             
             <button
               className={`p-2 rounded-md border border-gray-300 ${
@@ -223,17 +228,13 @@ export const ToolBar: React.FC<ToolBarProps> = ({
         )}
         
         {/* Page navigation and zoom controls - always visible */}
-        <div className={`flex items-center space-x-4 ${viewOnly ? 'w-full justify-between' : ''}`}>
-          <div className={viewOnly ? 'text-sm font-medium text-gray-700' : 'hidden'}>
-            Modo Visualização
-          </div>
-          
+        <div className={`flex items-center space-x-4`}>
           <div className="flex items-center space-x-4">
             {/* Zoom controls */}
             <div className="flex items-center bg-white border border-gray-300 rounded-md">
               <button
                 onClick={handleZoomOut}
-                className="px-2 py-1 border-r border-gray-300 hover:bg-gray-100 flex items-center justify-center"
+                className="flex items-center justify-center px-2 py-1 border-r border-gray-300 hover:bg-gray-100"
                 title="Diminuir Zoom"
               >
                 <IoRemoveOutline size={16} />
@@ -247,7 +248,7 @@ export const ToolBar: React.FC<ToolBarProps> = ({
               </button>
               <button
                 onClick={handleZoomIn}
-                className="px-2 py-1 hover:bg-gray-100 flex items-center justify-center"
+                className="flex items-center justify-center px-2 py-1 hover:bg-gray-100"
                 title="Aumentar Zoom"
               >
                 <IoAddOutline size={16} />

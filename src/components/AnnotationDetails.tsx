@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Annotation, AnnotationType, TagInterface, CategoryItem, CustomCategory } from '../types';
 import { getCategoryDisplayName, getCategoryColor } from '../utils';
 import { IoClose, IoSave, IoTrash, IoPencil, IoArrowBack, IoAdd, IoRemove, IoCheckmark } from 'react-icons/io5';
+import { Badge } from './Badge';
 
 interface AnnotationDetailsProps {
   annotation: Annotation;
@@ -87,7 +88,12 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   };
 
   // Function to toggle a tag in the selection
-  const toggleTag = (tag: TagInterface) => {
+  const toggleTag = (tag: TagInterface, event?: React.MouseEvent) => {
+    // Stop event propagation to prevent dialog from closing
+    if (event) {
+      event.stopPropagation();
+    }
+    
     if (isTagSelected(tag)) {
       // Remove tag
       setTags(tags.filter(t => 
@@ -165,21 +171,35 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
 
   return (
     <div
-      className={`fixed bg-white shadow-lg rounded-md p-4 z-50 max-h-[90vh] overflow-auto annotation-details ${showTagSelector && isEditing ? 'w-auto' : 'w-[300px]'}`}
+      className={`fixed bg-white shadow-lg rounded-md p-4 z-50 max-h-[90vh] overflow-auto annotation-details ${showTagSelector && isEditing ? 'w-auto' : 'w-[360px]'}`}
       data-testid="annotation-details-dialog"
       style={{
         top: position ? `${position.y}px` : '70px',
         right: position ? 'auto' : '20px',
         left: position ? `${position.x}px` : 'auto',
         transform: position ? 'translate(-50%, 0)' : 'none',
-        borderTop: categoryColor ? `4px solid ${categoryColor}` : undefined,
+        borderLeft: categoryColor ? `4px solid ${categoryColor}` : undefined,
       }}
+      onClick={(e) => e.stopPropagation()}
     >
       {/* Header with close button in top-right */}
-      <div className="flex justify-end mb-2.5 sticky top-0 bg-white z-10">
+      <div className="flex justify-between items-center mb-2.5 sticky top-0 bg-white z-10">
+        {/* Category label - show when selected category exists in either edit or view mode */}
+        {((isEditing && selectedCategory) || (!isEditing && annotation.category)) && (
+          <span 
+            className="px-2 py-0.5 rounded inline-block"
+            style={{ 
+              backgroundColor: isEditing ? selectedCategory?.color : annotation.category?.color,
+              color: 'white',
+              fontSize: '0.9em'
+            }}
+          >
+            {isEditing ? selectedCategory?.displayName : annotation.category?.displayName}
+          </span>
+        )}
         <button
           onClick={onClose}
-          className="bg-transparent border-0 text-xl cursor-pointer p-0 flex items-center justify-center"
+          className="flex items-center justify-center p-0 ml-auto text-xl bg-transparent border-0 cursor-pointer"
           aria-label="Fechar"
         >
           <IoClose size={22} />
@@ -229,66 +249,23 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                     placeholder="Adicione um comentário..."
                   />
                 </div>
-              </div>
-              
-              {/* Right column: Tag selector */}
-              <div className="w-1/2">
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="font-medium text-gray-700">
-                      <strong>Tags:</strong>
-                    </label>
-                    <button 
-                      type="button"
-                      onClick={() => setShowTagSelector(false)}
-                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center"
-                    >
-                      <IoRemove size={14} className="mr-1" />
-                      Ocultar Tags
-                    </button>
-                  </div>
-                  
-                  <div className="bg-gray-50 p-3 rounded-md border border-gray-200 max-h-[250px] overflow-y-auto">
-                    <p className="text-xs text-gray-500 mb-2">Disponíveis:</p>
-                    {availableTagsForCategory.map(tag => (
-                      <div key={tag._id || tag.tag} className="mb-1 last:mb-0">
-                        <button
-                          type="button"
-                          onClick={() => toggleTag(tag)}
-                          className={`w-full text-left px-2 py-1 rounded-md text-sm ${
-                            isTagSelected(tag) 
-                              ? 'bg-blue-100 border border-blue-300' 
-                              : 'hover:bg-gray-100 border border-transparent'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 ${
-                              isTagSelected(tag) ? 'bg-blue-500 text-white' : 'border border-gray-400'
-                            }`}>
-                              {isTagSelected(tag) && <IoCheckmark size={12} />}
-                            </div>
-                            {tag.tag}
-                          </div>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Display selected tags */}
+
+                {/* Display selected tags */}
                   {tags.length > 0 && (
                     <div className="mt-3">
-                      <p className="text-xs text-gray-500 mb-2">Tags Selecionadas:</p>
-                      <div className="flex flex-wrap gap-1">
+                      <p className="mb-2 text-xs text-gray-500">Tags Selecionadas:</p>
+                      <div className="flex flex-wrap flex-col gap-1 overflow-y-auto max-h-[100px]">
                         {tags.map((tag, index) => (
                           <div
                             key={index}
-                            className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center mb-1 mr-1"
+                            className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center mb-1 mr-1 max-w-[120px]"
+                            title={tag.tag}
                           >
-                            {tag.tag}
+                            <span className="truncate">{tag.tag}</span>
                             <button
                               type="button"
-                              onClick={() => toggleTag(tag)}
-                              className="ml-1 text-gray-600 hover:text-red-500"
+                              onClick={(e) => toggleTag(tag, e)}
+                              className="flex-shrink-0 ml-1 text-gray-600 hover:text-red-500"
                             >
                               <IoClose size={14} />
                             </button>
@@ -297,34 +274,65 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                       </div>
                     </div>
                   )}
+              </div>
+              
+              {/* Right column: Tag selector */}
+              <div className="w-1/2">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="font-medium text-gray-700">
+                      <strong>Tags:</strong>
+                    </label>
+                    <button 
+                      type="button"
+                      onClick={() => setShowTagSelector(false)}
+                      className="flex items-center px-2 py-1 text-xs bg-gray-100 rounded-md hover:bg-gray-200"
+                    >
+                      <IoRemove size={14} className="mr-1" />
+                      Ocultar Tags
+                    </button>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-3 rounded-md border border-gray-200 max-h-[180px] overflow-y-auto">
+                    {availableTagsForCategory.map(tag => (
+                      <div key={tag._id || tag.tag} className="mb-1 last:mb-0">
+                        <button
+                          type="button"
+                          onClick={(e) => toggleTag(tag, e)}
+                          className={`w-full text-left px-2 py-1 rounded-md text-sm ${
+                            isTagSelected(tag) 
+                              ? 'bg-blue-100 border border-blue-300' 
+                              : 'hover:bg-gray-100 border border-transparent'
+                          }`}
+                          title={tag.tag}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 flex-shrink-0 ${
+                              isTagSelected(tag) ? 'border border-blue-500 bg-blue-500 text-white' : 'border border-gray-400'
+                            }`}>
+                              {isTagSelected(tag) && <IoCheckmark size={12} />}
+                            </div>
+                            <span className="truncate">{tag.tag}</span>
+                          </div>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
             <>
               <div className="mb-4">
-                <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center justify-between mb-2">
                   <label htmlFor="category-select" className="block">
                     <strong>Competência:</strong>
                   </label>
-                  
-                  {availableTagsForCategory.length > 0 && selectedCategory && (
-                    <button 
-                      type="button"
-                      onClick={() => setShowTagSelector(true)}
-                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center"
-                    >
-                      <IoAdd size={14} className="mr-1" />
-                      Mostrar Tags ({tags.length} selecionadas)
-                    </button>
-                  )}
-                </div>
-                
-                <select
+                  <select
                   id="category-select"
                   value={selectedCategory?.category.toString() || ''}
                   onChange={handleCategoryChange}
-                  className="w-full p-2 border border-gray-300 rounded-md mb-2.5"
+                  className="max-w-[200px] p-2 border border-gray-300 rounded-md"
                   style={{ 
                     borderLeftWidth: '4px',
                     borderLeftColor: categoryColor || 'transparent'
@@ -340,33 +348,45 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                     </option>
                   ))}
                 </select>
-              </div>
-
-              {/* Display selected tags */}
-              {tags.length > 0 && (
+                  
+                </div>
+                {availableTagsForCategory.length > 0 && selectedCategory && (
                 <div className="mb-4">
-                  <label className="block mb-1.5">
-                    <strong>Tags Selecionadas:</strong>
-                  </label>
-                  <div className="flex flex-wrap">
-                    {tags.map((tag, index) => (
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block">
+                      <strong>Tags</strong>
+                    </label>
+                    <button 
+                      type="button"
+                      onClick={() => setShowTagSelector(true)}
+                      className="flex items-center px-2 py-1 text-xs bg-gray-100 rounded-md hover:bg-gray-200"
+                    >
+                      <IoAdd size={14} className="mr-1" />
+                      Tags
+                    </button>
+                  </div>
+                    <div className="flex flex-wrap">
+                    {tags.length > 0 && tags.map((tag, index) => (
                       <div
                         key={index}
-                        className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center mb-1 mr-1"
+                        className="bg-gray-100 px-2 py-1 rounded-md text-xs flex items-center mb-1 mr-1 max-w-[120px]"
+                        title={tag.tag}
                       >
-                        {tag.tag}
+                        <span className="truncate">{tag.tag}</span>
                         <button
                           type="button"
-                          onClick={() => toggleTag(tag)}
-                          className="ml-1 text-gray-600 hover:text-red-500"
+                          onClick={(e) => toggleTag(tag, e)}
+                          className="flex-shrink-0 ml-1 text-gray-600 hover:text-red-500"
                         >
                           <IoClose size={14} />
                         </button>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                  </div>
+                )}
+                
+              </div>
 
               <div className="mb-4">
                 <label htmlFor="annotation-content" className="block mb-1.5">
@@ -383,7 +403,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             </>
           )}
 
-          <div className="flex space-x-2 justify-end">
+          <div className="flex justify-end space-x-2">
             <button
               onClick={() => handleSetEditing(false)}
               className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-md flex items-center"
@@ -404,21 +424,6 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         <div>
           {/* Display mode */}
           <div className="mb-3">
-            {annotation.category && (
-              <div className="mb-2">
-                <span 
-                  className="ml-1 px-2 py-0.5 rounded inline-block"
-                  style={{ 
-                    backgroundColor: annotation.category.color,
-                    color: 'white',
-                    fontSize: '0.9em'
-                  }}
-                >
-                  {annotation.category.displayName}
-                </span>
-              </div>
-            )}
-
             {/* Display tags by type */}
             {Object.entries(groupedTags).length > 0 && (
               <div className="mb-2">
@@ -428,12 +433,17 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                     <div key={tipo} className="mt-1">
                       <div className="flex flex-wrap gap-1">
                         {tagsOfType.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="bg-gray-100 px-2 py-0.5 rounded-md text-xs mb-1 mr-1"
-                          >
-                            {tag.tag}
-                          </span>
+                          <Badge
+                            tag={tag}
+                            idx={index}
+                          />
+                          // <span
+                          //   key={index}
+                          //   className="bg-gray-100 px-2 py-0.5 rounded-md text-xs mb-1 mr-1 max-w-[120px] inline-block"
+                          //   title={tag.tag}
+                          // >
+                          //   <span className="inline-block w-full truncate">{tag.tag}</span>
+                          // </span>
                         ))}
                       </div>
                     </div>
@@ -445,7 +455,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             {/* Display content */}
            {content && <div className="mt-3">
               <strong>Anotações:</strong>
-              <div className="mt-1 p-2 bg-gray-50 rounded-md min-h-[40px] whitespace-pre-wrap">
+              <div className="mt-1 p-2 bg-gray-50 rounded-md min-h-[40px] max-h-[160px] overflow-y-auto whitespace-pre-wrap">
                 {content || <em className="text-gray-400">Sem conteúdo</em>}
               </div>
             </div>}
@@ -453,7 +463,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
 
           {/* Only show action buttons if not in view-only mode */}
           {!viewOnly && (
-            <div className="flex space-x-2 justify-end">
+            <div className="flex justify-end space-x-2">
               <button
                 onClick={handleDelete}
                 className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-md flex items-center"

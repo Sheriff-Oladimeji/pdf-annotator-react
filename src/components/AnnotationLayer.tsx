@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Annotation, AnnotationType, Point, AnnotationMode } from '../types';
 import { pointsToSvgPath, calculateRectFromPoints } from '../utils';
 import { IoInformationCircle } from 'react-icons/io5';
@@ -16,6 +16,8 @@ interface AnnotationLayerProps {
   selectedAnnotation?: Annotation | null;
   currentMode?: AnnotationMode;
   startPoint?: Point | null;
+  originalWidth?: number;
+  originalHeight?: number;
 }
 
 export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
@@ -30,10 +32,52 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   selectedAnnotation = null,
   currentMode = AnnotationMode.DRAWING,
   startPoint = null,
+  originalWidth = 0,
+  originalHeight = 0,
 }) => {
-  const pageAnnotations = annotations.filter(
-    (annotation) => annotation.pageIndex === pageIndex
-  );
+  const pageAnnotations = useMemo(() => 
+    annotations.filter(annotation => annotation.pageIndex === pageIndex)
+  , [annotations, pageIndex]);
+
+  // Function to transform normalized coordinates (0-1) to viewport coordinates
+  const normalizedToViewport = (point: Point): Point => {
+    if (originalWidth === 0 || originalHeight === 0) {
+      return point;
+    }
+    
+    // Convert from normalized (0-1) to absolute PDF coordinates
+    const pdfX = point.x * originalWidth;
+    const pdfY = point.y * originalHeight;
+    
+    // Keep the coordinates in PDF space (don't multiply by scale)
+    // The SVG container will handle the scaling
+    return { x: pdfX, y: pdfY };
+  };
+
+  // Function to transform rect with normalized coordinates to viewport coordinates
+  const transformRect = (rect: { x: number, y: number, width: number, height: number }) => {
+    if (originalWidth === 0 || originalHeight === 0) {
+      return rect;
+    }
+    
+    // Convert from normalized coordinates to absolute PDF coordinates
+    const pdfX = rect.x * originalWidth;
+    const pdfY = rect.y * originalHeight;
+    const pdfWidth = rect.width * originalWidth;
+    const pdfHeight = rect.height * originalHeight;
+    
+    return {
+      x: pdfX,
+      y: pdfY,
+      width: pdfWidth, 
+      height: pdfHeight
+    };
+  };
+
+  // Transform array of points from normalized to viewport coordinates
+  const transformPoints = (points: Point[]): Point[] => {
+    return points.map(point => normalizedToViewport(point));
+  };
 
   // Function to get a representative color for tags
   const getTagColor = (annotation: Annotation): string => {
@@ -51,17 +95,16 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
     if (isSelected(annotation)) {
       // Return appropriate styling based on annotation type
       switch (annotation.type) {
-        case AnnotationType.HIGHLIGHT:
+        case AnnotationType.HIGHLIGHTING:
+          return { strokeWidth: 15, opacity: 0.9, filter: 'drop-shadow(0 3px 6px rgba(2, 51, 129, 0.7))'  }; // Blue glow effect
         case AnnotationType.RECTANGLE:
-          return { strokeWidth: 3, stroke: '#3b82f6', strokeDasharray: '5,3' }; // Blue dashed outline
         case AnnotationType.UNDERLINE:
         case AnnotationType.STRIKEOUT:
         case AnnotationType.DRAWING:
-          return { strokeWidth: 4, filter: 'drop-shadow(0 0 3px rgba(59, 130, 246, 0.7))' }; // Blue glow effect
         case AnnotationType.TEXT:
         case AnnotationType.COMMENT:
         case AnnotationType.PIN:
-          return { filter: 'drop-shadow(0 0 3px rgba(59, 130, 246, 0.7))' }; // Blue glow effect
+          return { strokeWidth: 8, filter: 'drop-shadow(0 3px 6px rgba(2, 51, 129, 0.7))' }; // Blue glow effect
         default:
           return {};
       }
@@ -88,26 +131,27 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
     }
   };
 
+  // Create a dynamic viewBox to ensure annotations render at the correct scale
+  // Use original PDF dimensions for the viewBox to ensure correct scaling
+  const viewBox = `0 0 ${originalWidth} ${originalHeight}`;
+
   return (
     <div
       className="absolute top-0 left-0 w-full h-full pointer-events-none"
-      style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}
+      style={{ transformOrigin: 'top left' }}
     >
       <svg
         width="100%"
         height="100%"
+        viewBox={viewBox}
+        preserveAspectRatio="xMinYMin meet"
         className="absolute top-0 left-0 pointer-events-none"
       >
         {pageAnnotations.map((annotation) => {
           const { id, type, rect, color, points, thickness } = annotation;
           
-          // Don't scale the rect coordinates here since the container is already scaled
-          const scaledRect = {
-            x: rect.x,
-            y: rect.y,
-            width: rect.width,
-            height: rect.height,
-          };
+          // Transform normalized coordinates to viewport coordinates
+          const transformedRect = transformRect(rect);
           
           // Get selected styling if applicable
           const selectedStyle = getSelectedStyle(annotation);
@@ -117,13 +161,13 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
               return (
                 <rect
                   key={id}
-                  x={scaledRect.x}
-                  y={scaledRect.y}
-                  width={scaledRect.width}
-                  height={scaledRect.height}
+                  x={transformedRect.x}
+                  y={transformedRect.y}
+                  width={transformedRect.width}
+                  height={transformedRect.height}
                   fill={color}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   {...selectedStyle}
                 />
               );
@@ -131,14 +175,14 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
               return (
                 <line
                   key={id}
-                  x1={scaledRect.x}
-                  y1={scaledRect.y + scaledRect.height}
-                  x2={scaledRect.x + scaledRect.width}
-                  y2={scaledRect.y + scaledRect.height}
+                  x1={transformedRect.x}
+                  y1={transformedRect.y + transformedRect.height}
+                  x2={transformedRect.x + transformedRect.width}
+                  y2={transformedRect.y + transformedRect.height}
                   stroke={color}
                   strokeWidth={thickness || 2}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   {...selectedStyle}
                 />
               );
@@ -146,14 +190,14 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
               return (
                 <line
                   key={id}
-                  x1={scaledRect.x}
-                  y1={scaledRect.y + scaledRect.height / 2}
-                  x2={scaledRect.x + scaledRect.width}
-                  y2={scaledRect.y + scaledRect.height / 2}
+                  x1={transformedRect.x}
+                  y1={transformedRect.y + transformedRect.height / 2}
+                  x2={transformedRect.x + transformedRect.width}
+                  y2={transformedRect.y + transformedRect.height / 2}
                   stroke={color}
                   strokeWidth={thickness || 2}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   {...selectedStyle}
                 />
               );
@@ -161,22 +205,23 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
               return (
                 <rect
                   key={id}
-                  x={scaledRect.x}
-                  y={scaledRect.y}
-                  width={scaledRect.width}
-                  height={scaledRect.height}
+                  x={transformedRect.x}
+                  y={transformedRect.y}
+                  width={transformedRect.width}
+                  height={transformedRect.height}
                   stroke={color}
                   strokeWidth={thickness || 2}
                   fill="none"
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   {...selectedStyle}
                 />
               );
             case AnnotationType.DRAWING:
               if (!points || points.length < 2) return null;
-              // Don't scale points as the container is already scaled
-              const pathData = pointsToSvgPath(points);
+              // Transform drawing points from normalized to viewport coordinates
+              const transformedPoints = transformPoints(points);
+              const pathData = pointsToSvgPath(transformedPoints);
               return (
                 <path
                   key={id}
@@ -185,14 +230,15 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   strokeWidth={thickness || 4}
                   fill="none"
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   {...selectedStyle}
                 />
               );
             case AnnotationType.HIGHLIGHTING:
               if (!points || points.length < 2) return null;
-              // Don't scale points as the container is already scaled
-              const highlightingPathData = pointsToSvgPath(points);
+              // Transform highlighting points from normalized to viewport coordinates
+              const transformedHighlightPoints = transformPoints(points);
+              const highlightingPathData = pointsToSvgPath(transformedHighlightPoints);
               return (
                 <path
                   key={id}
@@ -204,7 +250,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   fill="none"
                   opacity={0.6}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   {...selectedStyle}
                 />
               );
@@ -212,12 +258,12 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
               return (
                 <foreignObject
                   key={id}
-                  x={scaledRect.x}
-                  y={scaledRect.y}
-                  width={scaledRect.width || 150}
-                  height={scaledRect.height || 50}
+                  x={transformedRect.x}
+                  y={transformedRect.y}
+                  width={transformedRect.width || 150}
+                  height={transformedRect.height || 50}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   style={selectedStyle}
                 >
                   <div
@@ -236,18 +282,18 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                 <g
                   key={id}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   style={selectedStyle}
                 >
                   <circle
-                    cx={scaledRect.x}
-                    cy={scaledRect.y}
+                    cx={transformedRect.x}
+                    cy={transformedRect.y}
                     r={10}
                     fill={color || '#FFC107'}
                   />
                   <foreignObject
-                    x={scaledRect.x - 7}
-                    y={scaledRect.y - 7}
+                    x={transformedRect.x - 7}
+                    y={transformedRect.y - 7}
                     width={14}
                     height={14}
                     style={{ overflow: 'visible' }}
@@ -259,66 +305,42 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                 </g>
               );
             case AnnotationType.PIN:
+              // For PIN type annotations, we need special handling to ensure they appear at a consistent size
+              const transformedPoint = normalizedToViewport({x: rect.x, y: rect.y});
               return (
                 <g
                   key={id}
+                  transform={`translate(${transformedPoint.x}, ${transformedPoint.y})`}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="pointer-events-auto cursor-pointer"
+                  className="cursor-pointer pointer-events-auto"
                   style={selectedStyle}
                 >
-                  {/* Pin base */}
                   <circle
-                    cx={scaledRect.x}
-                    cy={scaledRect.y}
-                    r={12}
-                    fill="#fff"
-                    stroke="#333"
-                    strokeWidth={1}
-                  />
-                  {/* Pin color indicator */}
-                  <circle
-                    cx={scaledRect.x}
-                    cy={scaledRect.y}
-                    r={8}
+                    cx={0}
+                    cy={0}
+                    r={12} // Fixed size (the viewBox handles the scaling)
                     fill={getTagColor(annotation)}
+                    opacity={0.7}
                   />
-                  
-                  {/* Use icon instead of text */}
                   <foreignObject
-                    x={scaledRect.x - 6}
-                    y={scaledRect.y - 6}
-                    width={12}
-                    height={12}
-                    style={{ overflow: 'visible' }}
+                    x={-10}
+                    y={-10}
+                    width={20}
+                    height={20}
+                    className="flex items-center justify-center"
                   >
-                    <div className="flex items-center justify-center w-full h-full text-white">
-                      <IoInformationCircle size={10} />
+                    <div className="flex items-center justify-center w-full h-full">
+                      {annotation.tags && annotation.tags.length > 0 && annotation.tags[0].tipo === 'alert' ? (
+                        <FaExclamationCircle 
+                          className="text-white" 
+                        />
+                      ) : (
+                        <IoInformationCircle 
+                          className="text-white" 
+                        />
+                      )}
                     </div>
                   </foreignObject>
-                  
-                  {/* Number badge if multiple tags */}
-                  {annotation.tags && annotation.tags.length > 1 && (
-                    <g>
-                      <circle
-                        cx={scaledRect.x + 10}
-                        cy={scaledRect.y - 10}
-                        r={7}
-                        fill="#ef4444"
-                        stroke="#fff"
-                        strokeWidth={1}
-                      />
-                      <text
-                        x={scaledRect.x + 10}
-                        y={scaledRect.y - 7}
-                        textAnchor="middle"
-                        fill="#FFF"
-                        fontSize="9"
-                        fontWeight="bold"
-                      >
-                        {annotation.tags.length}
-                      </text>
-                    </g>
-                  )}
                 </g>
               );
             default:
@@ -326,31 +348,28 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
           }
         })}
 
-        {isDrawing && activeDrawingPoints.length >= 2 && currentMode !== AnnotationMode.RECTANGLE && (
+        {/* Draw active drawing points if in drawing mode */}
+        {isDrawing && activeDrawingPoints.length > 1 && (
           <path
-            d={pointsToSvgPath(activeDrawingPoints)}
+            d={pointsToSvgPath(transformPoints(activeDrawingPoints))}
             stroke={drawingColor}
             strokeWidth={getStrokeWidth()}
-            strokeLinecap={currentMode === AnnotationMode.HIGHLIGHTING ? "round" : "butt"}
-            strokeLinejoin={currentMode === AnnotationMode.HIGHLIGHTING ? "round" : "miter"}
             fill="none"
-            opacity={currentMode === AnnotationMode.HIGHLIGHTING ? 0.8 : 1}
-            className="pointer-events-none"
+            pointerEvents="none"
           />
         )}
-        
-        {/* Visual feedback for rectangle drawing */}
-        {currentMode === AnnotationMode.RECTANGLE && startPoint && activeDrawingPoints.length > 0 && (
+
+        {/* Show rectangle preview when in Rectangle mode */}
+        {currentMode === AnnotationMode.RECTANGLE && startPoint && (
           <rect
-            x={Math.min(startPoint.x, activeDrawingPoints[activeDrawingPoints.length - 1].x)}
-            y={Math.min(startPoint.y, activeDrawingPoints[activeDrawingPoints.length - 1].y)}
-            width={Math.abs(activeDrawingPoints[activeDrawingPoints.length - 1].x - startPoint.x)}
-            height={Math.abs(activeDrawingPoints[activeDrawingPoints.length - 1].y - startPoint.y)}
+            x={normalizedToViewport(startPoint).x}
+            y={normalizedToViewport(startPoint).y}
+            width={0}
+            height={0}
             stroke={drawingColor}
             strokeWidth={getStrokeWidth()}
             fill="none"
-            strokeDasharray="4 2"
-            className="pointer-events-none"
+            pointerEvents="none"
           />
         )}
       </svg>

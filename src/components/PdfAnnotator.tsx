@@ -44,6 +44,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   fitToWidth = true, // New prop to control whether to fit to width
   defaultThickness,
   viewOnly = false, // New prop to control whether the component is in view-only mode
+  hideDetailsOnIdSelection = false, // Add the new prop with default value
 }, ref) => {
   const [pdfDocument, setPdfDocument] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
@@ -66,6 +67,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const [annotationThickness, setAnnotationThickness] = useState<number>(
     typeof defaultThickness === 'number' ? defaultThickness : 2
   );
+  const [showDetailsForIdSelection, setShowDetailsForIdSelection] = useState(true);
   
   // Configure the PDF worker
   useEffect(() => {
@@ -226,8 +228,17 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       
       // Check if click is inside the annotation details dialog
       const detailsDialog = document.querySelector('.annotation-details, [data-testid="annotation-details-dialog"]');
-      if (detailsDialog && detailsDialog.contains(event.target as Node)) {
-        return;
+      if (detailsDialog && (detailsDialog.contains(event.target as Node) || event.target === detailsDialog)) {
+        return; // Don't close if clicking inside the dialog
+      }
+      
+      // Check if click target has class or ancestor with class that contains 'dialog'
+      const targetElement = event.target as Element;
+      if (targetElement && (
+        targetElement.closest('.annotation-details') || 
+        targetElement.closest('[data-testid="annotation-details-dialog"]')
+      )) {
+        return; // Don't close if clicking on any element inside dialog or its children
       }
       
       // Check if click is on an annotation
@@ -292,55 +303,93 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         // If we have the annotation, select it
         selectAnnotation(annotation);
         
+        // Set whether to show details based on the hideDetailsOnIdSelection prop
+        setShowDetailsForIdSelection(!hideDetailsOnIdSelection);
+        
         // Scroll to the page containing this annotation if needed
         if (annotation.pageIndex + 1 !== currentPage) {
           handlePageChange(annotation.pageIndex + 1);
         }
         
-        // Set position for the details dialog based on the annotation's position
-        // Find the page container where the annotation is rendered
-        const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
-        
-        if (pageContainer) {
-          // If we found the page container, calculate position based on annotation coordinates
-          const rect = pageContainer.getBoundingClientRect();
-          // Calculate the actual position of the annotation on screen
-          const annotationX = rect.left + (annotation.rect.x * scale);
-          const annotationY = rect.top + (annotation.rect.y * scale);
+        // We need to wait a moment for the page to render before positioning
+        setTimeout(() => {
+          // Find the page container where the annotation is rendered
+          const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
           
-          // Position the dialog at 20% from the top left of the annotation
-          setSelectedAnnotationPosition({
-            x: annotationX + (annotation.rect.width * scale * 0.2),
-            y: annotationY + (annotation.rect.height * scale * 0.2)
-          });
-        } else {
-          // If we can't find the page container yet (e.g., page not rendered), 
-          // use a more reliable fallback: center the dialog in the viewport
-          // This ensures the dialog is always visible even if page isn't rendered yet
-          const viewportWidth = window.innerWidth;
-          const viewportHeight = window.innerHeight;
-          
-          setSelectedAnnotationPosition({
-            x: viewportWidth * 0.4, // 40% from left
-            y: viewportHeight * 0.3  // 30% from top
-          });
-          
-          // When the page becomes available (after scrolling), update the position
-          // Schedule a position update after a short delay to allow rendering
-          setTimeout(() => {
-            const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
-            if (pageContainer) {
-              const rect = pageContainer.getBoundingClientRect();
-              const annotationX = rect.left + (annotation.rect.x * scale);
-              const annotationY = rect.top + (annotation.rect.y * scale);
+          if (pageContainer) {
+            // If we found the page container, calculate position based on annotation coordinates
+            const rect = pageContainer.getBoundingClientRect();
+            // Calculate the actual position of the annotation on screen
+            const annotationX = rect.left + (annotation.rect.x * scale);
+            const annotationY = rect.top + (annotation.rect.y * scale);
+            
+            // Position the dialog near the annotation
+            setSelectedAnnotationPosition({
+              x: annotationX + (annotation.rect.width * scale * 0.2),
+              y: annotationY + (annotation.rect.height * scale * 0.2)
+            });
+            
+            // Scroll the annotation to be 20% from the top of the container
+            const containerRect = containerRef.current?.getBoundingClientRect();
+            if (containerRef.current && containerRect) {
+              const targetScrollTop = 
+                (pageContainer as HTMLElement).offsetTop + 
+                (annotation.rect.y * scale) - 
+                (containerRect.height * 0.2);
               
-              setSelectedAnnotationPosition({
-                x: annotationX + (annotation.rect.width * scale * 0.2),
-                y: annotationY + (annotation.rect.height * scale * 0.2)
+              containerRef.current.scrollTo({
+                top: targetScrollTop,
+                behavior: 'smooth'
               });
             }
-          }, 300); // Short delay to allow page to render
-        }
+          } else {
+            // If we can't find the page container yet (e.g., page not rendered), 
+            // We'll need a more reliable approach.
+            // First, schedule another attempt for when the page renders
+            const retryFindPageContainer = setInterval(() => {
+              const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
+              if (pageContainer) {
+                clearInterval(retryFindPageContainer);
+                
+                const rect = pageContainer.getBoundingClientRect();
+                const annotationX = rect.left + (annotation.rect.x * scale);
+                const annotationY = rect.top + (annotation.rect.y * scale);
+                
+                // Position the dialog near the annotation
+                setSelectedAnnotationPosition({
+                  x: annotationX + (annotation.rect.width * scale * 0.2),
+                  y: annotationY + (annotation.rect.height * scale * 0.2)
+                });
+                
+                // Scroll the annotation to be 20% from the top of the container
+                const containerRect = containerRef.current?.getBoundingClientRect();
+                if (containerRef.current && containerRect) {
+                  const targetScrollTop = 
+                    (pageContainer as HTMLElement).offsetTop + 
+                    (annotation.rect.y * scale) - 
+                    (containerRect.height * 0.2);
+                  
+                  containerRef.current.scrollTo({
+                    top: targetScrollTop,
+                    behavior: 'smooth'
+                  });
+                }
+              }
+            }, 100);
+            
+            // Clean up the interval after a certain timeout
+            setTimeout(() => clearInterval(retryFindPageContainer), 3000);
+            
+            // In the meantime, use a fallback position in the center of the viewport
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            setSelectedAnnotationPosition({
+              x: viewportWidth * 0.4, // 40% from left
+              y: viewportHeight * 0.3  // 30% from top
+            });
+          }
+        }, 300); // Wait for page rendering
         
         return true;
       }
@@ -381,15 +430,46 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       if (fitToWidth && pdfDocument && originalPageWidth && containerRef.current) {
         const containerWidth = containerRef.current.clientWidth - 40; // 40px for padding
         const newScale = containerWidth / originalPageWidth;
+        
+        // Set the new scale
         setScale(newScale);
+        
+        // Force a rerender of annotation positions
+        if (selectedAnnotation) {
+          // If there's a selected annotation, update its dialog position
+          const pageContainer = document.querySelector(`[data-page-number="${selectedAnnotation.pageIndex + 1}"]`);
+          if (pageContainer) {
+            const rect = pageContainer.getBoundingClientRect();
+            const annotationX = rect.left + (selectedAnnotation.rect.x * newScale);
+            const annotationY = rect.top + (selectedAnnotation.rect.y * newScale);
+            
+            setSelectedAnnotationPosition({
+              x: annotationX + (selectedAnnotation.rect.width * newScale * 0.2),
+              y: annotationY + (selectedAnnotation.rect.height * newScale * 0.2)
+            });
+          }
+        }
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
+    // Add a small debounce to avoid too many recalculations during resize
+    let resizeTimeout: NodeJS.Timeout | null = null;
+    
+    const debouncedResize = () => {
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+      resizeTimeout = setTimeout(handleResize, 100);
     };
-  }, [fitToWidth, pdfDocument, originalPageWidth]);
+
+    window.addEventListener('resize', debouncedResize);
+    return () => {
+      window.removeEventListener('resize', debouncedResize);
+      if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+      }
+    };
+  }, [fitToWidth, pdfDocument, originalPageWidth, selectedAnnotation]);
 
   useEffect(() => {
     setMode(annotationMode);
@@ -437,14 +517,54 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   const handleAnnotationClick = (annotation: Annotation, event?: React.MouseEvent) => {
+    setShowDetailsForIdSelection(true); // Always show details for manual clicks
     // If we have a click event, it means the annotation was clicked directly in the PDF view
     // so we should set the position for the detail dialog
     if (event && currentMode === AnnotationMode.NONE) {
       setSelectedAnnotationPosition({ x: event.clientX, y: event.clientY });
+      
+      // Scroll the annotation to be 20% from the top of the container
+      const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
+      if (containerRef.current && pageContainer) {
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const targetScrollTop = 
+          (pageContainer as HTMLElement).offsetTop + 
+          (annotation.rect.y * scale) - 
+          (containerRect.height * 0.2);
+        
+        containerRef.current.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        });
+      }
     } else {
       // If we don't have an event, the annotation was likely not clicked directly
-      // so we don't set a position, which will prevent the dialog from opening
-      setSelectedAnnotationPosition(null);
+      // so we need to position it properly based on the annotation position
+      const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
+      if (pageContainer) {
+        const rect = pageContainer.getBoundingClientRect();
+        const annotationX = rect.left + (annotation.rect.x * scale);
+        const annotationY = rect.top + (annotation.rect.y * scale);
+        
+        setSelectedAnnotationPosition({
+          x: annotationX + (annotation.rect.width * scale * 0.2),
+          y: annotationY + (annotation.rect.height * scale * 0.2)
+        });
+        
+        // Scroll the annotation to be 20% from the top of the container
+        if (containerRef.current) {
+          const containerRect = containerRef.current.getBoundingClientRect();
+          const targetScrollTop = 
+            (pageContainer as HTMLElement).offsetTop + 
+            (annotation.rect.y * scale) - 
+            (containerRect.height * 0.2);
+          
+          containerRef.current.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+          });
+        }
+      }
     }
     
     selectAnnotation(annotation);
@@ -653,9 +773,20 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     }
   };
 
+  // Helper function to get the PDF page dimensions at current scale
+  const getPageDimensions = (pageIndex: number) => {
+    if (!pdfDocument) return { width: 0, height: 0 };
+    
+    // Use a fallback for pages that haven't been rendered yet
+    return {
+      width: originalPageWidth ? originalPageWidth * scale : 0,
+      height: 0 // We don't need the height for horizontal boundaries
+    };
+  };
+
   return (
-    <div className="pdf-annotator bg-gray-100 min-h-screen relative">
-      <div className="sticky top-0 z-10 shadow-md bg-white">
+    <div className="flex flex-col overflow-hidden bg-gray-100 pdf-annotator">
+      <div className="bg-white shadow-md">
         <ToolBar
           currentMode={currentMode}
           onModeChange={handleAnnotationModeChange}
@@ -674,16 +805,26 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         />
       </div>
       
-      <div className="overflow-auto p-4 flex flex-col items-center" ref={containerRef}>
+      <div 
+        className="flex flex-col items-center flex-grow p-4 overflow-scroll scrollbar-hide" 
+        ref={containerRef}
+        style={{ 
+          height: "calc(100vh - 60px)", // Adjust based on toolbar height
+          width: "100%"
+        }}
+      >
         {renderPages()}
       </div>
 
       {/* Annotation Details Panel when an annotation is selected */}
-      {selectedAnnotation && (
+      {selectedAnnotation && showDetailsForIdSelection && (
         <AnnotationDetails
           key={`annotation-details-${selectedAnnotation.id}`}
           annotation={selectedAnnotation}
-          onClose={() => selectAnnotation(null)}
+          onClose={() => {
+            selectAnnotation(null);
+            setShowDetailsForIdSelection(true); // Reset the flag when closing
+          }}
           onUpdate={handleAnnotationUpdate}
           onDelete={deleteAnnotation}
           position={selectedAnnotationPosition || undefined}

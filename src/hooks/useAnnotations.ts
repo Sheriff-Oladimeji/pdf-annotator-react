@@ -179,11 +179,14 @@ export const useAnnotations = ({
       const annotationType = annotationModeToType(currentMode);
       if (!annotationType) return;
 
+      // Store the original point without any modification
+      const originalPoint = { ...point };
+
       if (annotationType === AnnotationType.DRAWING || annotationType === AnnotationType.HIGHLIGHTING) {
         setIsDrawing(true);
-        setDrawingPoints([point]);
+        setDrawingPoints([originalPoint]);
       } else {
-        setStartPoint(point);
+        setStartPoint(originalPoint);
       }
     },
     [currentMode]
@@ -192,13 +195,31 @@ export const useAnnotations = ({
   const handlePointerMove = useCallback(
     (point: Point, pageIndex: number): void => {
       if ((currentMode === AnnotationMode.DRAWING || currentMode === AnnotationMode.HIGHLIGHTING) && isDrawing) {
+        // Add the point without any modification
+        const originalPoint = { ...point };
         setDrawingPoints((prev) => {
-          return prev.concat([point]);
+          return prev.concat([originalPoint]);
         });
       }
     },
     [currentMode, isDrawing]
   );
+
+  const calculateRectFromNormalizedPoints = (start: Point, end: Point, pageIndex: number): AnnotationRect => {
+    // Points are already in normalized coordinates (0-1 range)
+    const x = Math.min(start.x, end.x);
+    const y = Math.min(start.y, end.y);
+    const width = Math.abs(end.x - start.x);
+    const height = Math.abs(end.y - start.y);
+    
+    return {
+      x,
+      y,
+      width,
+      height,
+      pageIndex,
+    };
+  };
 
   const handlePointerUp = useCallback(
     (point: Point, pageIndex: number): void => {
@@ -207,13 +228,16 @@ export const useAnnotations = ({
       const annotationType = annotationModeToType(currentMode);
       if (!annotationType) return;
 
+      // Use the original point without any modification
+      const originalPoint = { ...point };
+
       if ((annotationType === AnnotationType.DRAWING || annotationType === AnnotationType.HIGHLIGHTING) && isDrawing) {
         // Finish drawing
         setIsDrawing(false);
         
         if (drawingPoints.length < 2) return;
         
-        // Calculate bounding box of the drawing
+        // Calculate bounding box of the drawing - now all coordinates are already normalized (0-1)
         let minX = Number.MAX_VALUE;
         let minY = Number.MAX_VALUE;
         let maxX = Number.MIN_VALUE;
@@ -237,8 +261,8 @@ export const useAnnotations = ({
         createAnnotation(annotationType, rect, undefined, drawingPoints);
         setDrawingPoints([]);
       } else if (startPoint) {
-        // Create annotation based on start and end points
-        const rect = calculateRectFromPoints(startPoint, point, pageIndex);
+        // Create annotation based on start and end points - using normalized coordinates
+        const rect = calculateRectFromNormalizedPoints(startPoint, originalPoint, pageIndex);
         
         if (rect.width > 0 && rect.height > 0) {
           createAnnotation(annotationType, rect);

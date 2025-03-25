@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { AnnotationLayer } from './AnnotationLayer';
 import { Annotation, Point, AnnotationMode } from '../types';
@@ -50,6 +50,21 @@ export const PdfPage: React.FC<PdfPageProps> = ({
   const [pageWidth, setPageWidth] = useState<number>(0);
   const [isRendered, setIsRendered] = useState<boolean>(false);
   const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
+  const [viewportDimensions, setViewportDimensions] = useState<{width: number, height: number}>({width: 0, height: 0});
+  // Track actual canvas dimensions to handle window resizing
+  const [canvasDimensions, setCanvasDimensions] = useState<{width: number, height: number}>({width: 0, height: 0});
+  // Reference to most recent viewport for coordinate calculations
+  const viewportRef = useRef<pdfjsLib.PageViewport | null>(null);
+  // Add state to track original PDF page dimensions at scale 1.0
+  const [originalDimensions, setOriginalDimensions] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
+
+  // Function to get canvas dimensions - used for coordinate calculations
+  const updateCanvasDimensions = useCallback(() => {
+    if (canvasRef.current) {
+      const { width, height } = canvasRef.current.getBoundingClientRect();
+      setCanvasDimensions({ width, height });
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -69,9 +84,26 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         
         // Get the page
         const page = await pdfDocument.getPage(pageNumber);
+        
+        // Store the original dimensions at scale 1.0
+        const originalViewport = page.getViewport({ scale: 1.0 });
+        setOriginalDimensions({
+          width: originalViewport.width,
+          height: originalViewport.height
+        });
+        
         const viewport = page.getViewport({ 
           scale, 
           rotation: forceRotation !== null ? forceRotation : undefined 
+        });
+        
+        // Store viewport reference for coordinate calculations
+        viewportRef.current = viewport;
+        
+        // Store viewport dimensions for coordinate calculations
+        setViewportDimensions({
+          width: viewport.width,
+          height: viewport.height
         });
         
         // Ensure we're still mounted
@@ -91,6 +123,9 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         
         setPageHeight(viewport.height);
         setPageWidth(viewport.width);
+        
+        // Update canvas dimensions after setting canvas width/height
+        updateCanvasDimensions();
         
         const renderContext = {
           canvasContext: context,
@@ -129,23 +164,107 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         renderTaskRef.current = null;
       }
     };
-  }, [pdfDocument, pageNumber, scale, forceRotation]);
+  }, [pdfDocument, pageNumber, scale, forceRotation, updateCanvasDimensions]);
 
-  const getRelativeCoordinates = (event: React.PointerEvent): Point => {
-    if (!containerRef.current) return { x: 0, y: 0 };
+  // Add a useEffect to update coordinates on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      // Update canvas dimensions on resize
+      updateCanvasDimensions();
+      
+      // Force canvas redraw with updated coordinates
+      if (canvasRef.current) {
+        // Signal that dimensions may have changed
+        setIsRendered(false);
+        // Trigger re-render after a small delay
+        setTimeout(() => {
+          setIsRendered(true);
+        }, 100);
+      }
+    };
     
-    const rect = containerRef.current.getBoundingClientRect();
-    // Get the coordinates relative to the container
-    const relativeX = event.clientX - rect.left;
-    const relativeY = event.clientY - rect.top;
+    window.addEventListener('resize', handleResize);
     
-    // Transform the coordinates according to the current scale
-    // This ensures that we store coordinates in the unscaled coordinate system
-    return {
-      x: relativeX / scale,
-      y: relativeY / scale,
+    // Also run resize handler on initial mount to ensure dimensions are correct
+    handleResize();
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [updateCanvasDimensions]);
+
+  // Enhance the coordinate conversion functions to use normalized coordinates (0-1 range)
+  // This ensures annotations work at any zoom level or screen size
+  const getRelativeCoordinates = (event: React.MouseEvent | React.PointerEvent): Point => {
+    if (!canvasRef.current || originalDimensions.width === 0) {
+      return { x: 0, y: 0 };
+    }
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    
+    // Calculate coordinates in the current viewport
+    const viewportX = (event.clientX - rect.left);
+    const viewportY = (event.clientY - rect.top);
+    
+    // Convert to normalized coordinates (0-1 range) relative to original PDF dimensions
+    // First convert viewport coordinates to PDF coordinates by dividing by scale
+    const pdfX = viewportX / scale;
+    const pdfY = viewportY / scale;
+    
+    // Then normalize to 0-1 range based on original page dimensions
+    const normalizedX = pdfX / originalDimensions.width;
+    const normalizedY = pdfY / originalDimensions.height;
+    
+    // Apply bounds checking to ensure coordinates are within the page (0-1 range)
+    const boundedX = Math.max(0, Math.min(normalizedX, 1));
+    const boundedY = Math.max(0, Math.min(normalizedY, 1));
+    
+    // Store original scale with the point for debugging/reference
+    return { 
+      x: boundedX, 
+      y: boundedY
     };
   };
+
+  // This function converts normalized coordinates (0-1) back to viewport coordinates for rendering
+  const normalizedToViewportCoordinates = useCallback((normalizedX: number, normalizedY: number): Point => {
+    if (!viewportRef.current) {
+      return { x: normalizedX, y: normalizedY };
+    }
+    
+    // Convert from normalized (0-1) to PDF coordinates
+    const pdfX = normalizedX * originalDimensions.width;
+    const pdfY = normalizedY * originalDimensions.height;
+    
+    // Convert from PDF coordinates to viewport coordinates
+    const viewportX = pdfX * scale;
+    const viewportY = pdfY * scale;
+    
+    return { x: viewportX, y: viewportY };
+  }, [scale, originalDimensions]);
+
+  // Function to convert screen coordinates to PDF coordinates
+  const screenToPdfCoordinates = useCallback((x: number, y: number): Point => {
+    if (!canvasRef.current || !viewportRef.current) {
+      return { x, y };
+    }
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    // Calculate relative position within the canvas element
+    const relativeX = (x - rect.left);
+    const relativeY = (y - rect.top);
+    
+    // Convert to PDF coordinates (which are in the original PDF coordinate system)
+    const pdfX = relativeX / scale;
+    const pdfY = relativeY / scale;
+    
+    // Bound the coordinates to the page dimensions
+    const viewport = viewportRef.current;
+    const boundedX = Math.max(0, Math.min(pdfX, viewport.width / scale));
+    const boundedY = Math.max(0, Math.min(pdfY, viewport.height / scale));
+    
+    return { x: boundedX, y: boundedY };
+  }, [scale]);
 
   const handlePointerDown = (event: React.PointerEvent) => {
     if (!onPointerDown) return;
@@ -178,10 +297,9 @@ export const PdfPage: React.FC<PdfPageProps> = ({
     if (!onCommentAdd) return;
     
     event.preventDefault();
-    const point = {
-      x: (event.clientX - (containerRef.current?.getBoundingClientRect().left || 0)) / scale,
-      y: (event.clientY - (containerRef.current?.getBoundingClientRect().top || 0)) / scale,
-    };
+    
+    // Use the getRelativeCoordinates function for consistency
+    const point = getRelativeCoordinates(event);
     onCommentAdd(point, pageNumber - 1);
   };
 
@@ -221,6 +339,8 @@ export const PdfPage: React.FC<PdfPageProps> = ({
           selectedAnnotation={selectedAnnotation}
           currentMode={currentMode}
           startPoint={startPoint}
+          originalWidth={originalDimensions.width}
+          originalHeight={originalDimensions.height}
         />
       )}
     </div>
