@@ -4,12 +4,12 @@ import { ChevronDown } from 'lucide-react';
 
 const ThicknessDropdown = ({ currentThickness, handleThicknessChange }: { currentThickness: number, handleThicknessChange: (thickness: number) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };

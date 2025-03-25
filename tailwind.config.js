@@ -4,16 +4,7 @@ export default {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
-    extend: {
-      // Add custom styles for hiding scrollbars
-      '.scrollbar-hide': {
-        '&::-webkit-scrollbar': {
-          display: 'none'
-        },
-        '-ms-overflow-style': 'none',
-        'scrollbar-width': 'none'
-      }
-    },
+    extend: {},
   },
   plugins: [],
 }

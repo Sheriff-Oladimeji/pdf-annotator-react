@@ -44,7 +44,6 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   fitToWidth = true, // New prop to control whether to fit to width
   defaultThickness,
   viewOnly = false, // New prop to control whether the component is in view-only mode
-  hideDetailsOnIdSelection = false, // Add the new prop with default value
 }, ref) => {
   const [pdfDocument, setPdfDocument] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState<number>(0);
@@ -67,7 +66,6 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const [annotationThickness, setAnnotationThickness] = useState<number>(
     typeof defaultThickness === 'number' ? defaultThickness : 2
   );
-  const [showDetailsForIdSelection, setShowDetailsForIdSelection] = useState(true);
   
   // Configure the PDF worker
   useEffect(() => {
@@ -303,9 +301,6 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         // If we have the annotation, select it
         selectAnnotation(annotation);
         
-        // Set whether to show details based on the hideDetailsOnIdSelection prop
-        setShowDetailsForIdSelection(!hideDetailsOnIdSelection);
-        
         // Scroll to the page containing this annotation if needed
         if (annotation.pageIndex + 1 !== currentPage) {
           handlePageChange(annotation.pageIndex + 1);
@@ -517,7 +512,6 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   const handleAnnotationClick = (annotation: Annotation, event?: React.MouseEvent) => {
-    setShowDetailsForIdSelection(true); // Always show details for manual clicks
     // If we have a click event, it means the annotation was clicked directly in the PDF view
     // so we should set the position for the detail dialog
     if (event && currentMode === AnnotationMode.NONE) {
@@ -785,8 +779,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   return (
-    <div className="flex flex-col overflow-hidden bg-gray-100 pdf-annotator">
-      <div className="bg-white shadow-md">
+    <div className="pdf-annotator bg-gray-100 flex flex-col overflow-hidden">
+      <div className="shadow-md bg-white">
         <ToolBar
           currentMode={currentMode}
           onModeChange={handleAnnotationModeChange}
@@ -806,7 +800,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       </div>
       
       <div 
-        className="flex flex-col items-center flex-grow p-4 overflow-scroll scrollbar-hide" 
+        className="flex-grow overflow-scroll p-4 flex flex-col items-center" 
         ref={containerRef}
         style={{ 
           height: "calc(100vh - 60px)", // Adjust based on toolbar height
@@ -817,14 +811,11 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       </div>
 
       {/* Annotation Details Panel when an annotation is selected */}
-      {selectedAnnotation && showDetailsForIdSelection && (
+      {selectedAnnotation && (
         <AnnotationDetails
           key={`annotation-details-${selectedAnnotation.id}`}
           annotation={selectedAnnotation}
-          onClose={() => {
-            selectAnnotation(null);
-            setShowDetailsForIdSelection(true); // Reset the flag when closing
-          }}
+          onClose={() => selectAnnotation(null)}
           onUpdate={handleAnnotationUpdate}
           onDelete={deleteAnnotation}
           position={selectedAnnotationPosition || undefined}

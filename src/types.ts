@@ -63,22 +63,19 @@ export enum AnnotationMode {
   PIN = 'pin',
 }
 
-export interface PDFAnnotatorProps {
+export type PDFAnnotatorProps = {
   url: string;
   annotations?: Annotation[];
   scale?: number;
   pageNumber?: number;
   onDocumentLoadSuccess?: (numPages: number) => void;
-  onPageChange?: (page: number) => void;
+  onPageChange?: (pageNumber: number) => void;
   annotationMode?: AnnotationMode;
   onAnnotationModeChange?: (mode: AnnotationMode) => void;
-  currentCategory?: CategoryItem;
-  onCategoryChange?: (category: CategoryItem | undefined) => void;
-  onAnnotationCreate?: (annotation: Annotation) => void;
-  onAnnotationUpdate?: (annotation: Annotation) => void;
-  onAnnotationDelete?: (annotationId: string) => void;
-  onAnnotationSelect?: (annotation: Annotation | null) => void;
-  onAnnotationsChange?: (annotations: Annotation[]) => void;
+  currentCategory?: CategoryItem; // Current selected category
+  onCategoryChange?: (category: CategoryItem | undefined) => void; // Callback when category changes
+  onAnnotationsChange?: (annotations: Annotation[]) => void; // Callback when annotations array changes
+  customCategories?: CustomCategory[]; // Categories with their associated tags
   highlightColor?: string;
   underlineColor?: string;
   strikeoutColor?: string;
@@ -87,13 +84,12 @@ export interface PDFAnnotatorProps {
   textColor?: string;
   commentColor?: string;
   pinColor?: string;
-  customCategories?: CustomCategory[];
+  highlightingColor?: string; // Prop for the highlighting marker color
   pdfWorkerSrc?: string;
   fitToWidth?: boolean;
-  defaultThickness?: number;
-  viewOnly?: boolean;
-  hideDetailsOnIdSelection?: boolean; // New prop to control annotation details visibility when selecting by ID
-}
+  defaultThickness?: number; // Default thickness for annotations
+  viewOnly?: boolean; // Whether the component is in view-only mode (cannot edit annotations)
+} & AnnotationEventCallbacks;
 
 
 export interface CustomCategory {
