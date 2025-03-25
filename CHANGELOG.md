@@ -5,15 +5,24 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.53] - 2025-03-21
+## [0.1.53] - 2025-03-22
+
+### Added
+- 
+
+### Changed
+- Improved annotation details dialog behavior for external selection
+  - Modified `selectAnnotationById` to only highlight annotations without showing the dialog when selected from external lists
+  - Added `showDetailsDialog` state to control dialog visibility independently from annotation selection
+  - Maintained scrolling behavior to ensure selected annotations are visible
+  - Enhanced user experience by eliminating dialog positioning issues for external selection
+  - Improved conditional rendering to control dialog visibility based on selection source
 
 ### Fixed
-- Fixed issue where changing categories could delete annotations
-  - Updated annotation operations to use parent's annotation list instead of local state
-  - Fixed race condition in annotation state management
-  - Prevented unintended annotation loss during category changes
-  - Maintained category filtering for display only, not state updates
-  - Improved state synchronization between parent and child components
+- Resolved annotation dialog positioning issues
+  - Fixed problem where the dialog would appear in the middle or corner of screen when selecting annotations by ID
+  - Simplified the dialog display logic to avoid rendering issues with the `AnnotationDetails` component
+  - Improved the overall user interface by making annotation selection via ID more predictable
 
 ## [0.1.52] - 2025-03-21
 

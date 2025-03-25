@@ -96,7 +96,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
       // Return appropriate styling based on annotation type
       switch (annotation.type) {
         case AnnotationType.HIGHLIGHTING:
-          return { strokeWidth: 15, opacity: 0.9, filter: 'drop-shadow(0 3px 6px rgba(2, 51, 129, 0.7))'  }; // Blue glow effect
+          return { strokeWidth: 8, opacity: 0.9, filter: 'drop-shadow(0 3px 6px rgba(2, 51, 129, 0.7))'  }; // Blue glow effect
         case AnnotationType.RECTANGLE:
         case AnnotationType.UNDERLINE:
         case AnnotationType.STRIKEOUT:

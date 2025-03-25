@@ -33,7 +33,6 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<CategoryItem | undefined>(annotation.category);
   const [tags, setTags] = useState<TagInterface[]>(annotation.tags || []);
   const [showTagSelector, setShowTagSelector] = useState(false);
-  const [selectedCompetencia, setSelectedCompetencia] = useState<number | null>(null);
 
   // Function to handle setting editing state that respects viewOnly mode
   const handleSetEditing = (editing: boolean) => {
@@ -141,13 +140,6 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
     }
   };
 
-  const formatDate = (date: Date) => {
-    if (!(date instanceof Date)) {
-      date = new Date(date);
-    }
-    return date.toLocaleString();
-  };
-
   // Group tags by type for display
   const groupedTags = tags.reduce<Record<string, TagInterface[]>>((acc, tag) => {
     if (!acc[tag.tipo]) {
@@ -178,14 +170,14 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
         right: position ? 'auto' : '20px',
         left: position ? `${position.x}px` : 'auto',
         transform: position ? 'translate(-50%, 0)' : 'none',
-        borderLeft: categoryColor ? `4px solid ${categoryColor}` : undefined,
+        borderLeft: `4px solid ${categoryColor ? categoryColor : '#bbbbbb'}`,
       }}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header with close button in top-right */}
       <div className="flex justify-between items-center mb-2.5 sticky top-0 bg-white z-10">
         {/* Category label - show when selected category exists in either edit or view mode */}
-        {((isEditing && selectedCategory) || (!isEditing && annotation.category)) && (
+        {((isEditing && selectedCategory) || (!isEditing && annotation.category)) ? (
           <span 
             className="px-2 py-0.5 rounded inline-block"
             style={{ 
@@ -195,6 +187,17 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
             }}
           >
             {isEditing ? selectedCategory?.displayName : annotation.category?.displayName}
+          </span>
+        ) : (
+          <span 
+            className="px-2 py-0.5 rounded inline-block"
+            style={{ 
+              backgroundColor: '#bbbbbb',
+              color: 'white',
+              fontSize: '0.9em'
+            }}
+          >
+            Sem Categoria
           </span>
         )}
         <button
@@ -335,7 +338,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                   className="max-w-[200px] p-2 border border-gray-300 rounded-md"
                   style={{ 
                     borderLeftWidth: '4px',
-                    borderLeftColor: categoryColor || 'transparent'
+                    borderLeftColor: categoryColor || '#bbbbbb'
                   }}
                 >
                   <option value="">Sem Categoria</option>
@@ -437,13 +440,6 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                             tag={tag}
                             idx={index}
                           />
-                          // <span
-                          //   key={index}
-                          //   className="bg-gray-100 px-2 py-0.5 rounded-md text-xs mb-1 mr-1 max-w-[120px] inline-block"
-                          //   title={tag.tag}
-                          // >
-                          //   <span className="inline-block w-full truncate">{tag.tag}</span>
-                          // </span>
                         ))}
                       </div>
                     </div>
