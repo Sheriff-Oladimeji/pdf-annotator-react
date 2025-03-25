@@ -5,6 +5,16 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.53] - 2025-03-21
+
+### Fixed
+- Fixed issue where changing categories could delete annotations
+  - Updated annotation operations to use parent's annotation list instead of local state
+  - Fixed race condition in annotation state management
+  - Prevented unintended annotation loss during category changes
+  - Maintained category filtering for display only, not state updates
+  - Improved state synchronization between parent and child components
+
 ## [0.1.52] - 2025-03-21
 
 ### Added
