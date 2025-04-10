@@ -5,7 +5,8 @@ import { ToolBar } from './ToolBar';
 import { CommentPopup } from './CommentPopup';
 import { TextInputPopup } from './TextInputPopup';
 import { useAnnotations } from '../hooks/useAnnotations';
-import { PDFAnnotatorProps, Annotation, AnnotationMode, Point, AnnotationType, TagInterface, CategoryItem, CustomCategory } from '../types';
+import { PDFAnnotatorProps, Annotation, AnnotationMode, Point, AnnotationType } from '../types';
+import {TagInterface, CompetenciaInterface} from 'lingapp-revisao-redacao'
 import { AnnotationDetails } from './AnnotationDetails';
 import { annotationsToJSON } from '../utils';
 
@@ -50,6 +51,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const [currentPage, setCurrentPage] = useState<number>(pageNumber);
   const [scale, setScale] = useState<number>(initialScale);
   const [originalPageWidth, setOriginalPageWidth] = useState<number | null>(null);
+  const [originalPageHeight, setOriginalPageHeight] = useState<number | null>(null);
   const [showCommentPopup, setShowCommentPopup] = useState<boolean>(false);
   const [commentPosition, setCommentPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showTextPopup, setShowTextPopup] = useState<boolean>(false);
@@ -58,22 +60,40 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const [showPinPopup, setShowPinPopup] = useState<boolean>(false);
   const [pinPosition, setPinPosition] = useState<Point>({ x: 0, y: 0 });
   const [pinPageIndex, setPinPageIndex] = useState<number>(0);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryItem | undefined>(currentCategory);
+  const [selectedCategory, setSelectedCategory] = useState<CompetenciaInterface | undefined>(currentCategory);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedAnnotationPosition, setSelectedAnnotationPosition] = useState<{ x: number, y: number } | null>(null);
   const [isNewAnnotation, setIsNewAnnotation] = useState(false);
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number, y: number } | null>(null);
   const [annotationThickness, setAnnotationThickness] = useState<number>(
-    typeof defaultThickness === 'number' ? defaultThickness : 2
+    typeof defaultThickness === 'number' ? defaultThickness : 8
   );
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState<boolean>(false);
   
   // Configure the PDF worker
   useEffect(() => {
-    // Use the provided worker source or default to a CDN with HTTPS
-    const workerSrc = pdfWorkerSrc || `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+    try {
+      // Use the provided worker source or default to a CDN with HTTPS
+      const workerSrc = pdfWorkerSrc || `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+      
+      // Ensure PDF.js cMapUrl is set for handling various PDF text encodings
+      const params = new URL(document.location.href).searchParams;
+      const cMapUrl = params.get('cmapurl') || 'https://unpkg.com/pdfjs-dist@4.0.189/cmaps/';
+      
+      // Set global PDF.js parameters for better stability
+      (pdfjsLib as any).GlobalWorkerOptions.workerSrc = workerSrc;
+      pdfjsLib.GlobalWorkerOptions.workerPort = null; // Force use of worker file
+      
+      console.log('PDF.js worker configured successfully:', {
+        version: pdfjsLib.version,
+        workerSrc,
+        cMapUrl
+      });
+    } catch (error) {
+      console.error('Error configuring PDF.js worker:', error);
+    }
   }, [pdfWorkerSrc]);
   
   // Calculate the scale factor needed to fit the PDF to the container width
@@ -85,8 +105,9 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       const page = await pdfDoc.getPage(1);
       const viewport = page.getViewport({ scale: 1.0 }); // Get original size
       
-      // Store the original page width
+      // Store the original page width and height
       setOriginalPageWidth(viewport.width);
+      setOriginalPageHeight(viewport.height);
       
       // Calculate container width (accounting for padding)
       const containerWidth = containerRef.current.clientWidth - 40; // 40px for padding (20px on each side)
@@ -125,7 +146,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
   
   // Extract the competencia property from each CustomCategory for the ToolBar
-  const categoryItems: CategoryItem[] = customCategories.map(cat => cat.competencia);
+  const CompetenciaInterfaces: CompetenciaInterface[] = customCategories.map(cat => cat.competencia);
   
   const {
     annotations: localAnnotations,
@@ -186,7 +207,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     textColor,
     commentColor,
     pinColor,
-    customCategories: categoryItems,
+    customCategories: CompetenciaInterfaces,
     thickness: annotationThickness,
   });
 
@@ -300,6 +321,46 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     }
   }, [selectedAnnotation, selectAnnotation, currentMode, showDetailsDialog]);
 
+  // Extracted scrollToAnnotation function for better organization and reusability
+  const scrollToAnnotation = (annotation: Annotation) => {
+    const containerElement = containerRef.current;
+    if (!containerElement) return;
+    
+    // Query for the page container using exact attribute value match
+    const pageSelector = `[data-page-number="${annotation.pageIndex + 1}"]`;
+    const pageContainer = document.querySelector(pageSelector) as HTMLElement;
+    
+    if (pageContainer) {
+      // Force a layout calculation to ensure accurate positions
+      const forceReflow = pageContainer.offsetHeight;
+      
+      // Get direct measurements from DOM
+      const pageOffsetTop = pageContainer.offsetTop;
+      
+      // Calculate exact annotation position
+      const annotationOffsetY = annotation.rect.y * scale;
+      const totalOffsetTop = pageOffsetTop + annotationOffsetY;
+      
+      // Position the annotation at the top of the viewport with just a small margin
+      const margin = 20; // 20px margin from the top
+      const targetPosition = totalOffsetTop - margin;
+      
+      // Scroll directly using scrollTop for more reliable positioning
+      containerElement.scrollTop = Math.max(0, targetPosition);
+    } else {
+      // Fallback to a more basic approach
+      const pageHeight = originalPageHeight || 800;
+      const totalOffsetTop = (annotation.pageIndex * pageHeight) + (annotation.rect.y * scale);
+      
+      // Position with just a small margin from the top
+      const margin = 20;
+      const targetPosition = totalOffsetTop - margin;
+      
+      // Direct scroll
+      containerElement.scrollTop = Math.max(0, targetPosition);
+    }
+  };
+  
   // Expose the getAnnotationsJSON method via ref
   useImperativeHandle(ref, () => ({
     getAnnotationsJSON: () => annotationsToJSON(localAnnotations),
@@ -308,34 +369,39 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       const annotation = localAnnotations.find(ann => ann.id === annotationId);
       
       if (annotation) {
-        console.log('Found annotation:', annotation);
+        console.log('Found annotation for selection:', annotation);
         
-        // If we have the annotation, select it WITHOUT showing the dialog
+        // Select the annotation but don't show the dialog
         selectAnnotation(annotation);
-        setShowDetailsDialog(false); // Explicitly set to false for ID selection
+        setShowDetailsDialog(false);
         
-        // Scroll to the page containing this annotation if needed
-        if (annotation.pageIndex + 1 !== currentPage) {
+        // Track if we need to change page
+        const needsPageChange = annotation.pageIndex + 1 !== currentPage;
+        
+        if (needsPageChange) {
+          console.log(`Changing page from ${currentPage} to ${annotation.pageIndex + 1}`);
+          
+          // Change the page first
           handlePageChange(annotation.pageIndex + 1);
-        }
-        
-        // Scroll annotation into view with a delay to allow page rendering
-        setTimeout(() => {
-          const containerElement = containerRef.current;
-          if (containerElement) {
-            // Calculate approximate scroll position
-            const estimatedPageHeight = 1000; // Rough estimate of page height
-            const approximateScrollTop = 
-              annotation.pageIndex * estimatedPageHeight + 
-              (annotation.rect.y * scale) - 
-              (containerElement.clientHeight * 0.2);
+          
+          // Wait for the page to be fully rendered before scrolling
+          setTimeout(() => {
+            console.log('Page should be rendered, attempting to scroll to annotation');
+            scrollToAnnotation(annotation);
             
-            containerElement.scrollTo({
-              top: Math.max(0, approximateScrollTop),
-              behavior: 'smooth'
-            });
-          }
-        }, 300);
+            // If first attempt fails, try again
+            setTimeout(() => {
+              console.log('Trying annotation scroll again to ensure it works');
+              scrollToAnnotation(annotation);
+            }, 600);
+          }, 400);
+        } else {
+          // Already on the correct page, scroll immediately
+          console.log('Already on correct page, scrolling to annotation position');
+          
+          // Short delay to ensure DOM is ready
+          scrollToAnnotation(annotation);
+        }
         
         return true;
       }
@@ -346,10 +412,39 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   }));
 
   useEffect(() => {
+    let loadingTask: pdfjsLib.PDFDocumentLoadingTask | null = null;
+    
     const loadDocument = async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument(url);
+        // If there's an existing loading task, cancel it
+        if (loadingTask) {
+          await loadingTask.destroy();
+        }
+        
+        console.log('Loading PDF document from URL:', url);
+        loadingTask = pdfjsLib.getDocument({
+          url: url,
+          cMapUrl: 'https://unpkg.com/pdfjs-dist@4.0.189/cmaps/',
+          cMapPacked: true,
+          disableRange: false,
+          disableStream: false,
+          disableAutoFetch: false,
+          isEvalSupported: true,
+          enableXfa: true
+        });
+        
+        // Log when document loading starts
+        loadingTask.onProgress = (progressData) => {
+          console.log('PDF loading progress:', progressData.loaded, 'of', (progressData.total || 'unknown'), 'bytes loaded');
+        };
+        
         const pdfDoc = await loadingTask.promise;
+        
+        console.log('PDF document loaded successfully:', {
+          numPages: pdfDoc.numPages,
+          fingerprint: pdfDoc.fingerprint,
+          isPureXfa: pdfDoc.isPureXfa
+        });
         
         setPdfDocument(pdfDoc);
         setNumPages(pdfDoc.numPages);
@@ -365,10 +460,20 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         }
       } catch (error) {
         console.error('Error loading PDF document:', error);
+        // You might want to show an error message to the user here
       }
     };
 
     loadDocument();
+    
+    // Clean up loading task when component unmounts or URL changes
+    return () => {
+      if (loadingTask) {
+        loadingTask.destroy().catch(err => {
+          console.error('Error destroying PDF loading task:', err);
+        });
+      }
+    };
   }, [url, onDocumentLoadSuccess, fitToWidth, initialScale]);
 
   // Recalculate scale when window is resized
@@ -424,7 +529,28 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
 
   useEffect(() => {
     setSelectedCategory(currentCategory);
-  }, [currentCategory]);
+    
+    // If there are annotations and the category changes, update those without a category
+    if (localAnnotations.length > 0 && currentCategory) {
+      // Add the current category to annotations that don't have one
+      const updatedAnnotations = localAnnotations.map(ann => {
+        if (!ann.category) {
+          return {
+            ...ann,
+            category: currentCategory,
+            color: currentCategory.color
+          };
+        }
+        return ann;
+      });
+      
+      // Call onAnnotationsChange if provided and if there are any changes
+      if (onAnnotationsChange && 
+          updatedAnnotations.some(a => !a.category)) {
+        onAnnotationsChange(updatedAnnotations);
+      }
+    }
+  }, [currentCategory, localAnnotations]);
 
   // When the annotation mode changes or we deselect an annotation, reset the position
   useEffect(() => {
@@ -453,17 +579,27 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     }
   };
 
-  const handleCategoryChange = (category: CategoryItem | undefined) => {
-    if (!viewOnly) {
-      setSelectedCategory(category);
-      
-      if (onCategoryChange) {
-        onCategoryChange(category);
-      }
+  const handleCategoryChange = (category: CompetenciaInterface | undefined) => {
+    // Always allow changing the category for filtering purposes
+    setSelectedCategory(category);
+    
+    // Call the onCategoryChange callback if provided
+    if (onCategoryChange) {
+      onCategoryChange(category);
     }
   };
 
   const handleAnnotationClick = (annotation: Annotation, event?: React.MouseEvent) => {
+    // Log the full annotation object and its category to understand its structure
+    // console.log('Selected annotation:', {
+    //   id: annotation.id,
+    //   type: annotation.type,
+    //   content: annotation.content,
+    //   category: annotation.category, 
+    //   categoryCompetencia: annotation.category?.competencia,
+    //   categoryType: annotation.category ? typeof annotation.category.competencia : 'undefined'
+    // });
+    
     // If we have a click event, it means the annotation was clicked directly in the PDF view
     if (event && currentMode === AnnotationMode.NONE) {
       const pageContainer = document.querySelector(`[data-page-number="${annotation.pageIndex + 1}"]`);
@@ -691,10 +827,85 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   const renderPages = () => {
     if (!pdfDocument) return null;
 
+    // Debug log all annotations to see their structure
+    // console.log('All annotations:', localAnnotations);
+    // console.log('Selected category:', selectedCategory);
+
+    // First, try to normalize the category on annotations that might have invalid category structure
+    const normalizedAnnotations = localAnnotations.map(ann => {
+      // Skip if the annotation doesn't have a category
+      if (!ann.category) return ann;
+      
+      // Check if the category has a competencia property with the actual competencia id
+      if (typeof ann.category.competencia === 'undefined') {
+        // console.warn('Found annotation with invalid category structure:', ann.id);
+        
+        // See if we can rebuild a valid category from what's available
+        const fixedCategory = customCategories.find(cc => 
+          cc.competencia.displayName === ann.category?.displayName || 
+          cc.competencia.color === ann.category?.color
+        );
+        
+        if (fixedCategory) {
+          // console.log('Fixed category for annotation:', ann.id, fixedCategory.competencia);
+          return {
+            ...ann,
+            category: fixedCategory.competencia
+          };
+        }
+      }
+      
+      return ann;
+    });
+
     // Filter annotations by category if a category is selected
     const filteredAnnotations = selectedCategory 
-      ? localAnnotations.filter(a => a.category?.category === selectedCategory.category)
-      : localAnnotations;
+      ? normalizedAnnotations.filter(a => {
+          // Skip annotations without category
+          if (!a.category) {
+            return false;
+          }
+
+          // Get the ID from the competencia for comparison
+          let annotationCompetenciaId = null;
+          
+          // Handle different category structures 
+          if (typeof a.category.competencia === 'number') {
+            annotationCompetenciaId = a.category.competencia;
+          } else if (a.category.competencia && typeof a.category.competencia === 'object') {
+            // Try to extract competencia from nested object if it exists
+            annotationCompetenciaId = (a.category.competencia as any).competencia;
+          }
+          
+          // Same for the selected category
+          let selectedCompetenciaId = null;
+          
+          if (typeof selectedCategory.competencia === 'number') {
+            selectedCompetenciaId = selectedCategory.competencia;
+          } else if (selectedCategory.competencia && typeof selectedCategory.competencia === 'object') {
+            selectedCompetenciaId = (selectedCategory.competencia as any).competencia;
+          }
+          
+          // Log the comparison for debugging
+          // console.log('Annotation comparison:', {
+          //   annotationId: a.id,
+          //   annotationCategory: a.category,
+          //   annotationCompetenciaId,
+          //   selectedCategory,
+          //   selectedCompetenciaId,
+          //   match: annotationCompetenciaId === selectedCompetenciaId
+          // });
+          
+          return annotationCompetenciaId === selectedCompetenciaId;
+        })
+      : normalizedAnnotations;
+
+    // console.log('Filtering annotations:', {
+    //   totalAnnotations: localAnnotations.length,
+    //   normalizedAnnotations: normalizedAnnotations.length,
+    //   selectedCategory: selectedCategory?.competencia,
+    //   filteredCount: filteredAnnotations.length
+    // });
 
     const pages = [];
     for (let i = 1; i <= numPages; i++) {
@@ -802,7 +1013,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   };
 
   return (
-    <div className="flex flex-col overflow-hidden bg-gray-100 pdf-annotator">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-gray-100 pdf-annotator">
       <div className="bg-white shadow-md">
         <ToolBar
           currentMode={currentMode}
@@ -812,7 +1023,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
           onPageChange={handlePageChange}
           currentCategory={selectedCategory}
           onCategoryChange={handleCategoryChange}
-          customCategories={categoryItems}
+          customCategories={CompetenciaInterfaces}
           scale={scale}
           onScaleChange={handleScaleChange}
           onFitToWidth={handleFitToWidth}
@@ -823,14 +1034,32 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
       </div>
       
       <div 
-        className="flex flex-col items-center flex-grow p-4 overflow-scroll" 
+        className="relative flex-grow overflow-auto"
         ref={containerRef}
         style={{ 
           height: "calc(100vh - 60px)", // Adjust based on toolbar height
-          width: "100%"
+          backgroundColor: "#f5f5f5"
         }}
       >
-        {renderPages()}
+        <div 
+          className="flex flex-col items-center min-h-full px-4 py-4"
+          style={{
+            width: "100%"
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2rem',
+              width: 'fit-content',
+              margin: '0 auto'
+            }}
+          >
+            {renderPages()}
+          </div>
+        </div>
       </div>
 
       {/* Annotation Details Panel when an annotation is selected AND we should show the dialog */}

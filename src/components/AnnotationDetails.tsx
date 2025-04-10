@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Annotation, AnnotationType, TagInterface, CategoryItem, CustomCategory } from '../types';
-import { getCategoryDisplayName, getCategoryColor } from '../utils';
+import { Annotation } from '../types';
 import { IoClose, IoSave, IoTrash, IoPencil, IoArrowBack, IoAdd, IoRemove, IoCheckmark } from 'react-icons/io5';
 import { Badge } from './Badge';
-
+import { CompetenciaInterface, CompetenciaWithTags, TagInterface } from 'lingapp-revisao-redacao';
 interface AnnotationDetailsProps {
   annotation: Annotation;
   onUpdate: (id: string, updates: Partial<Annotation>) => void;
@@ -11,7 +10,7 @@ interface AnnotationDetailsProps {
   onClose: () => void;
   position?: { x: number, y: number }; // Optional position for the dialog
   isNew?: boolean; // Flag to indicate if this is a newly created annotation
-  customCategories?: CustomCategory[]; // Use CustomCategory for categories with tags
+  customCategories?: CompetenciaWithTags[]; // Use CompetenciaInterface for categories with tags
   viewOnly?: boolean; // New prop to indicate view-only mode
   onAnnotationsChange?: (annotations: Annotation[]) => void; // Optional callback when annotations change
 }
@@ -30,7 +29,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   // Only allow editing mode if not in viewOnly mode
   const [isEditing, setIsEditing] = useState(isNew && !viewOnly);
   const [content, setContent] = useState(annotation.content || '');
-  const [selectedCategory, setSelectedCategory] = useState<CategoryItem | undefined>(annotation.category);
+  const [selectedCategory, setSelectedCategory] = useState<CompetenciaInterface | undefined>(annotation.category);
   const [tags, setTags] = useState<TagInterface[]>(annotation.tags || []);
   const [showTagSelector, setShowTagSelector] = useState(false);
 
@@ -46,13 +45,13 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   // Category color comes directly from the selected category
   const categoryColor = useMemo(() => {
     // Use the selected category in edit mode, otherwise use the annotation's category
-    const categoryToUse = isEditing ? selectedCategory : annotation.category;
+    const categoryToUse = isEditing ? annotation.category: selectedCategory;
     return categoryToUse?.color || '';
   }, [annotation.category, selectedCategory, isEditing]);
 
   // Update local state when annotation prop changes
   useEffect(() => {
-    console.log('Annotation updated in details component:', annotation);
+    // console.log('Annotation updated in details component:', annotation);
     setContent(annotation.content || '');
     setSelectedCategory(annotation.category);
     setTags(annotation.tags || []);
@@ -68,7 +67,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
     if (!selectedCategory) return [];
     
     const selectedCustomCategory = customCategories.find(
-      cc => cc.competencia.category === selectedCategory.category
+      cc => cc.competencia.competencia === selectedCategory.competencia
     );
     
     if (selectedCustomCategory) {
@@ -137,6 +136,9 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
       if (onAnnotationsChange) {
         onAnnotationsChange([]);
       }
+      
+      // Close the dialog after confirming deletion
+      onClose();
     }
   };
 
@@ -152,11 +154,11 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
   // Handle category change
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const categoryId = parseInt(e.target.value, 10);
-    const category = allCategories.find(c => c.category === categoryId);
+    const category = allCategories.find(c => c.competencia === categoryId);
     setSelectedCategory(category);
     
     // If we have a new category, reset the selected tags
-    if (category && (!selectedCategory || category.category !== selectedCategory.category)) {
+    if (category && (!selectedCategory || category.competencia !== selectedCategory.competencia)) {
       setTags([]);
     }
   };
@@ -220,7 +222,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                 <div className="mb-2.5">
                   <select
                     id="category-select"
-                    value={selectedCategory?.category.toString() || ''}
+                    value={selectedCategory?.competencia.toString() || ''}
                     onChange={handleCategoryChange}
                     className="w-full p-2 border border-gray-300 rounded-md mb-2.5"
                     style={{ 
@@ -231,8 +233,8 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                     <option value="">Sem Categoria</option>
                     {allCategories.map((category) => (
                       <option 
-                        key={category.category} 
-                        value={category.category}
+                        key={category.competencia} 
+                        value={category.competencia}
                       >
                         {category.displayName}
                       </option>
@@ -301,9 +303,9 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                       <div key={tag._id || tag.tag} className="mb-1 last:mb-0">
                         <button
                           type="button"
-                          onClick={(e) => toggleTag(tag, e)}
+                          onClick={(e) => toggleTag(tag as TagInterface, e)}
                           className={`w-full text-left px-2 py-1 rounded-md text-sm ${
-                            isTagSelected(tag) 
+                            isTagSelected(tag as TagInterface) 
                               ? 'bg-blue-100 border border-blue-300' 
                               : 'hover:bg-gray-100 border border-transparent'
                           }`}
@@ -311,9 +313,9 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                         >
                           <div className="flex items-center">
                             <div className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 flex-shrink-0 ${
-                              isTagSelected(tag) ? 'border border-blue-500 bg-blue-500 text-white' : 'border border-gray-400'
+                              isTagSelected(tag as TagInterface) ? 'border border-blue-500 bg-blue-500 text-white' : 'border border-gray-400'
                             }`}>
-                              {isTagSelected(tag) && <IoCheckmark size={12} />}
+                              {isTagSelected(tag as TagInterface) && <IoCheckmark size={12} />}
                             </div>
                             <span className="truncate">{tag.tag}</span>
                           </div>
@@ -333,7 +335,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                   </label>
                   <select
                   id="category-select"
-                  value={selectedCategory?.category.toString() || ''}
+                  value={selectedCategory?.competencia.toString() || ''}
                   onChange={handleCategoryChange}
                   className="max-w-[200px] p-2 border border-gray-300 rounded-md"
                   style={{ 
@@ -344,8 +346,8 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                   <option value="">Sem Categoria</option>
                   {allCategories.map((category) => (
                     <option 
-                      key={category.category} 
-                      value={category.category}
+                      key={category.competencia} 
+                      value={category.competencia}
                     >
                       {category.displayName}
                     </option>
@@ -378,7 +380,7 @@ export const AnnotationDetails: React.FC<AnnotationDetailsProps> = ({
                         <span className="truncate">{tag.tag}</span>
                         <button
                           type="button"
-                          onClick={(e) => toggleTag(tag, e)}
+                          onClick={(e) => toggleTag(tag as TagInterface, e)}
                           className="flex-shrink-0 ml-1 text-gray-600 hover:text-red-500"
                         >
                           <IoClose size={14} />

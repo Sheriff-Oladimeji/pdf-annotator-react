@@ -1,3 +1,5 @@
+import { CompetenciaInterface, CompetenciaWithTags, TagInterface } from 'lingapp-revisao-redacao'
+
 export type Point = {
   x: number;
   y: number;
@@ -23,11 +25,6 @@ export enum AnnotationType {
   PIN = 'pin',
 }
 
-// Default ENEM categories - keep for backward compatibility
-
-
-
-
 export interface Annotation {
   id: string;
   type: AnnotationType;
@@ -39,7 +36,7 @@ export interface Annotation {
   tags?: TagInterface[];
   createdAt: Date;
   updatedAt?: Date;
-  category?: CategoryItem;
+  category?: CompetenciaInterface;
   thickness?: number; // Add thickness property to store stroke width
 }
 
@@ -72,10 +69,10 @@ export type PDFAnnotatorProps = {
   onPageChange?: (pageNumber: number) => void;
   annotationMode?: AnnotationMode;
   onAnnotationModeChange?: (mode: AnnotationMode) => void;
-  currentCategory?: CategoryItem; // Current selected category
-  onCategoryChange?: (category: CategoryItem | undefined) => void; // Callback when category changes
+  currentCategory?: CompetenciaInterface; // Current selected category
+  onCategoryChange?: (category: CompetenciaInterface | undefined) => void; // Callback when category changes
   onAnnotationsChange?: (annotations: Annotation[]) => void; // Callback when annotations array changes
-  customCategories?: CustomCategory[]; // Categories with their associated tags
+  customCategories?: CompetenciaWithTags[]; // Categories with their associated tags
   highlightColor?: string;
   underlineColor?: string;
   strikeoutColor?: string;
@@ -90,24 +87,3 @@ export type PDFAnnotatorProps = {
   defaultThickness?: number; // Default thickness for annotations
   viewOnly?: boolean; // Whether the component is in view-only mode (cannot edit annotations)
 } & AnnotationEventCallbacks;
-
-
-export interface CustomCategory {
-  competencia: CategoryItem
-  tagsCompetencia: TagInterface[]
-}
-
-
-export interface TagInterface {
-  _id?: string;
-  tag: string;
-  tipo: string;
-}
-
-
-// Generic category item interface for custom categories
-export interface CategoryItem {
-  category: number;
-  displayName: string;
-  color: string;
-}

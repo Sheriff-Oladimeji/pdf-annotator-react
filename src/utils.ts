@@ -1,15 +1,30 @@
-import { Annotation, AnnotationMode, AnnotationRect, AnnotationType, Point, CategoryItem } from './types';
+import { CompetenciaInterface } from 'lingapp-revisao-redacao';
+import { Annotation, AnnotationMode, AnnotationRect, AnnotationType, Point } from './types';
 import { v4 as uuidv4 } from 'uuid';
+
+// Helper function to generate MongoDB-like ObjectId
+const generateMongoLikeId = (): string => {
+  // ObjectId format: 24 hex chars (12 bytes)
+  // Format: 4 bytes timestamp + 5 bytes random + 3 bytes counter
+  
+  // Get current timestamp (4 bytes - 8 hex chars)
+  const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+  
+  // Generate random part (16 hex chars to make 24 total)
+  const random = uuidv4().replace(/-/g, '').substring(0, 16);
+  
+  return timestamp + random;
+};
 
 export const createAnnotation = (
   type: AnnotationType,
   rect: { x: number; y: number; width: number; height: number; pageIndex: number },
   content: string = '',
   color: string = 'rgba(255, 0, 0, 0.5)',
-  category?: CategoryItem
+  category?: CompetenciaInterface
 ): Annotation => {
   return {
-    id: Math.random().toString(36).substring(2, 11),
+    id: generateMongoLikeId(),
     type,
     rect,
     pageIndex: rect.pageIndex,
@@ -22,7 +37,7 @@ export const createAnnotation = (
 
 export const getAnnotationColor = (
   type: AnnotationType,
-  category?: CategoryItem,
+  category?: CompetenciaInterface,
   categoryColors?: Record<string, string>
 ): string => {
   if (category) {
@@ -114,22 +129,22 @@ export const DEFAULT_CATEGORY_COLORS: Record<number, string> = {
 
 // Get color for a category
 export const getCategoryColor = (
-  category?: CategoryItem | null
+  category?: CompetenciaInterface | null
 ): string => {
   if (!category) return DEFAULT_CATEGORY_COLORS[0]; // Default color
   
-  // Use the color from the CategoryItem
+  // Use the color from the CompetenciaInterface
   if (category.color) {
     return category.color;
   }
   
   // Fallback to default colors if no color is specified
-  return DEFAULT_CATEGORY_COLORS[category.category] || DEFAULT_CATEGORY_COLORS[0];
+  return DEFAULT_CATEGORY_COLORS[category.competencia] || DEFAULT_CATEGORY_COLORS[0];
 };
 
 // Get the display name for a category
 export const getCategoryDisplayName = (
-  category?: CategoryItem | null
+  category?: CompetenciaInterface | null
 ): string => {
   if (!category) return 'Sem categoria';
   
@@ -139,7 +154,7 @@ export const getCategoryDisplayName = (
   }
   
   // Default competency names if no display name is available
-  switch (category.category) {
+  switch (category.competencia) {
     case 1:
       return 'Competência 1';
     case 2:
@@ -151,7 +166,7 @@ export const getCategoryDisplayName = (
     case 5:
       return 'Competência 5';
     default:
-      return `Competência ${category.category}`;
+      return `Competência ${category.competencia}`;
   }
 };
 

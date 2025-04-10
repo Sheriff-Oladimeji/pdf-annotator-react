@@ -18,6 +18,9 @@ interface AnnotationLayerProps {
   startPoint?: Point | null;
   originalWidth?: number;
   originalHeight?: number;
+  originalPageDimensions?: { width: number, height: number };
+  viewportToNormalizedCoordinates?: (event: React.MouseEvent | React.PointerEvent) => Point;
+  normalizedToViewportCoordinates?: (normalizedX: number, normalizedY: number) => Point;
 }
 
 export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
@@ -34,20 +37,30 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   startPoint = null,
   originalWidth = 0,
   originalHeight = 0,
+  originalPageDimensions,
+  viewportToNormalizedCoordinates,
+  normalizedToViewportCoordinates,
 }) => {
+  const effectiveOriginalWidth = originalPageDimensions?.width || originalWidth;
+  const effectiveOriginalHeight = originalPageDimensions?.height || originalHeight;
+  
   const pageAnnotations = useMemo(() => 
     annotations.filter(annotation => annotation.pageIndex === pageIndex)
   , [annotations, pageIndex]);
 
   // Function to transform normalized coordinates (0-1) to viewport coordinates
   const normalizedToViewport = (point: Point): Point => {
-    if (originalWidth === 0 || originalHeight === 0) {
+    if (normalizedToViewportCoordinates) {
+      return normalizedToViewportCoordinates(point.x, point.y);
+    }
+    
+    if (effectiveOriginalWidth === 0 || effectiveOriginalHeight === 0) {
       return point;
     }
     
     // Convert from normalized (0-1) to absolute PDF coordinates
-    const pdfX = point.x * originalWidth;
-    const pdfY = point.y * originalHeight;
+    const pdfX = point.x * effectiveOriginalWidth;
+    const pdfY = point.y * effectiveOriginalHeight;
     
     // Keep the coordinates in PDF space (don't multiply by scale)
     // The SVG container will handle the scaling
@@ -56,15 +69,15 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
 
   // Function to transform rect with normalized coordinates to viewport coordinates
   const transformRect = (rect: { x: number, y: number, width: number, height: number }) => {
-    if (originalWidth === 0 || originalHeight === 0) {
+    if (effectiveOriginalWidth === 0 || effectiveOriginalHeight === 0) {
       return rect;
     }
     
     // Convert from normalized coordinates to absolute PDF coordinates
-    const pdfX = rect.x * originalWidth;
-    const pdfY = rect.y * originalHeight;
-    const pdfWidth = rect.width * originalWidth;
-    const pdfHeight = rect.height * originalHeight;
+    const pdfX = rect.x * effectiveOriginalWidth;
+    const pdfY = rect.y * effectiveOriginalHeight;
+    const pdfWidth = rect.width * effectiveOriginalWidth;
+    const pdfHeight = rect.height * effectiveOriginalHeight;
     
     return {
       x: pdfX,
@@ -133,7 +146,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
 
   // Create a dynamic viewBox to ensure annotations render at the correct scale
   // Use original PDF dimensions for the viewBox to ensure correct scaling
-  const viewBox = `0 0 ${originalWidth} ${originalHeight}`;
+  const viewBox = `0 0 ${effectiveOriginalWidth} ${effectiveOriginalHeight}`;
 
   return (
     <div
@@ -167,7 +180,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   height={transformedRect.height}
                   fill={color}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   {...selectedStyle}
                 />
               );
@@ -182,7 +197,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   stroke={color}
                   strokeWidth={thickness || 2}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   {...selectedStyle}
                 />
               );
@@ -197,7 +214,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   stroke={color}
                   strokeWidth={thickness || 2}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   {...selectedStyle}
                 />
               );
@@ -213,7 +232,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   strokeWidth={thickness || 2}
                   fill="none"
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   {...selectedStyle}
                 />
               );
@@ -230,7 +251,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   strokeWidth={thickness || 4}
                   fill="none"
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   {...selectedStyle}
                 />
               );
@@ -250,7 +273,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   fill="none"
                   opacity={0.6}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   {...selectedStyle}
                 />
               );
@@ -263,7 +288,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   width={transformedRect.width || 150}
                   height={transformedRect.height || 50}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   style={selectedStyle}
                 >
                   <div
@@ -282,7 +309,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                 <g
                   key={id}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   style={selectedStyle}
                 >
                   <circle
@@ -312,7 +341,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   key={id}
                   transform={`translate(${transformedPoint.x}, ${transformedPoint.y})`}
                   onClick={(e) => onAnnotationClick?.(annotation, e)}
-                  className="cursor-pointer pointer-events-auto"
+                  className="cursor-pointer pointer-events-auto annotation"
+                  data-annotation-id={id}
+                  data-annotation-type={type}
                   style={selectedStyle}
                 >
                   <circle

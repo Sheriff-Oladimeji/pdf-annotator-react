@@ -1,6 +1,6 @@
 {
   "name": "pdf-annotator-react",
-  "version": "0.1.53",
+  "version": "0.1.75",
   "description": "A React component library for PDF annotation",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -40,11 +40,12 @@
   },
   "license": "MIT",
   "peerDependencies": {
-    "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-    "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
+    "lingapp-revisao-redacao": "^1.0.11",
     "lucide-react": "^0.483.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.0.189",
@@ -59,19 +60,25 @@
     "@babel/preset-typescript": "^7.22.15",
     "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-commonjs": "^25.0.4",
-    "@rollup/plugin-node-resolve": "^15.2.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@tailwindcss/postcss": "^4.0.14",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "rollup": "^4.35.0",
+    "rollup": "^4.9.6",
     "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-typescript2": "^0.35.0",
     "tailwindcss": "^4.0.14",
     "typescript": "^5.2.2"
+  },
+  "resolutions": {
+    "glob": "^10.3.10",
+    "inflight": "^1.0.6",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7"
   }
 }

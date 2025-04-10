@@ -21,9 +21,6 @@ export type {
   Annotation,
   AnnotationEventCallbacks,
   PDFAnnotatorProps,
-  CategoryItem,
-  CustomCategory,
-  TagInterface
 } from './types';
 
 // Utils

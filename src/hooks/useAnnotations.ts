@@ -7,7 +7,6 @@ import {
   AnnotationRect, 
   Point,
   AnnotationEventCallbacks,
-  CategoryItem
 } from '../types';
 import { 
   annotationModeToType, 
@@ -15,11 +14,12 @@ import {
   getAnnotationColor, 
   getCategoryColor 
 } from '../utils';
+import { CompetenciaInterface } from 'lingapp-revisao-redacao';
 
 interface UseAnnotationsProps extends AnnotationEventCallbacks {
   initialAnnotations?: Annotation[];
   annotationMode?: AnnotationMode;
-  currentCategory?: CategoryItem;
+  currentCategory?: CompetenciaInterface;
   highlightColor?: string;
   underlineColor?: string;
   strikeoutColor?: string;
@@ -29,9 +29,23 @@ interface UseAnnotationsProps extends AnnotationEventCallbacks {
   commentColor?: string;
   pinColor?: string;
   highlightingColor?: string;
-  customCategories?: CategoryItem[];
+  customCategories?: CompetenciaInterface[];
   thickness?: number;
 }
+
+// Helper function to generate MongoDB-like ObjectId
+const generateMongoLikeId = (): string => {
+  // ObjectId format: 24 hex chars (12 bytes)
+  // Format: 4 bytes timestamp + 5 bytes random + 3 bytes counter
+  
+  // Get current timestamp (4 bytes - 8 hex chars)
+  const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+  
+  // Generate random part (16 hex chars to make 24 total)
+  const random = uuidv4().replace(/-/g, '').substring(0, 16);
+  
+  return timestamp + random;
+};
 
 export const useAnnotations = ({
   initialAnnotations = [],
@@ -41,16 +55,16 @@ export const useAnnotations = ({
   onAnnotationUpdate,
   onAnnotationDelete,
   onAnnotationSelect,
-  highlightColor,
-  underlineColor,
-  strikeoutColor,
-  rectangleColor,
-  drawingColor,
-  textColor,
-  commentColor,
-  pinColor,
-  highlightingColor,
-  customCategories = [],
+  // highlightColor,
+  // underlineColor,
+  // strikeoutColor,
+  // rectangleColor,
+  // drawingColor,
+  // textColor,
+  // commentColor,
+  // pinColor,
+  // highlightingColor,
+  // customCategories = [],
   thickness = 2,
 }: UseAnnotationsProps) => {
   const [annotations, setAnnotations] = useState<Annotation[]>(initialAnnotations);
@@ -83,7 +97,7 @@ export const useAnnotations = ({
       const color = getColor(type);
       
       const newAnnotation: Annotation = {
-        id: uuidv4(),
+        id: generateMongoLikeId(),
         type,
         rect,
         pageIndex: rect.pageIndex,
@@ -109,7 +123,7 @@ export const useAnnotations = ({
 
   const updateAnnotation = useCallback(
     (id: string, updates: Partial<Annotation>): void => {
-      console.log('useAnnotations updateAnnotation:', id, updates);
+      // console.log('useAnnotations updateAnnotation:', id, updates);
       setAnnotations((prev) => {
         const updated = prev.map((annotation) => {
           if (annotation.id === id) {
@@ -125,7 +139,7 @@ export const useAnnotations = ({
               color: updatedColor || annotation.color, // Ensure color is properly updated
               updatedAt: new Date(),
             };
-            console.log('Updated annotation with new color:', updatedAnnotation.color);
+            // console.log('Updated annotation with new color:', updatedAnnotation.color);
             // Call the callback if provided
             onAnnotationUpdate?.(updatedAnnotation);
             

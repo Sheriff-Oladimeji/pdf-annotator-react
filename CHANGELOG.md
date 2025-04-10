@@ -5,6 +5,331 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.75] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.74] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.73] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- Enhanced annotation IDs to use MongoDB-style ObjectIds
+  - Updated ID generation to create proper 24-character hexadecimal strings
+  - Format follows MongoDB convention with timestamp + random components
+  - Ensures consistent ID format across all annotation types
+  - Improved compatibility with MongoDB databases
+  - Standardized ID generation across utils.ts and useAnnotations.ts
+
+### Fixed
+- 
+
+## [0.1.72] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Fixed complex category structure issues in annotation filtering
+  - Added category normalization to handle inconsistent category structures
+  - Enhanced filtering logic to better handle different category object formats
+  - Implemented automatic category structure repair for annotations with invalid categories
+  - Added more detailed logging to help diagnose category structure issues
+  - Improved category handling when switching between different categories
+  - Fixed undefined competencia values by handling multiple object structures
+
+## [0.1.71] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Fixed category filtering in annotation display
+  - Completely refactored category comparison logic to handle complex category objects
+  - Added safe extraction of competencia ID values regardless of object structure
+  - Fixed issue where annotations with categories weren't being filtered correctly
+  - Added detailed logging to help diagnose filtering problems
+  - Improved type safety with better TypeScript assertions and checks
+
+## [0.1.70] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Fixed category filtering that wasn't working correctly
+  - Added better debugging and logging to diagnose filtering issues
+  - Fixed comparison of category.competencia values between annotations and selected category
+  - Improved code readability in the filtering function
+  - Added null checks to prevent errors with annotations without categories
+
+## [0.1.69] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Fixed category filtering issue
+  - Fixed problem where selecting "Filtrar por Categoria" (no category) wasn't properly clearing the filter
+  - Added proper handling of undefined category in the ToolBar component
+  - Added logging to help diagnose filtering issues
+  - Ensured consistent behavior when switching between categories
+
+## [0.1.68] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.67] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.66] - 2025-04-09
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.65] - 2025-04-07
+
+### Added
+- 
+
+### Changed
+- Improved annotation positioning for single-page PDFs
+  - Changed annotation scrolling to position annotations at the top of the viewport
+  - Added a small 20px margin at the top for better readability
+  - Simplified scrolling logic by removing percentage-based positioning
+  - Enhanced user experience for single-page PDF documents
+  - Optimized annotation visibility with more intuitive positioning
+
+### Fixed
+- 
+
+## [0.1.64] - 2025-04-06
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Improved annotation selection accuracy
+  - Removed problematic highlight-pulse effect that was causing visual issues
+  - Simplified scrolling mechanism for more reliable positioning
+  - Removed unused CSS animations and styles
+  - Focused only on precise annotation positioning
+  - Improved direct scroll behavior for more reliable results
+
+## [0.1.63] - 2025-04-06
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Critical fixes for annotation selection scroll positioning
+  - Fixed issue where annotation selection would scroll to the correct page but not position the annotation in view
+  - Added direct scrollTop positioning for more reliable initial scrolling
+  - Implemented two-phase scrolling with immediate and smooth adjustment for better accuracy
+  - Added multiple scroll attempts for annotations after page changes
+  - Enhanced annotation highlighting with additional wrapper highlighting for better visibility
+  - Improved fallback mechanisms for cases where annotation elements aren't found
+  - Added more detailed logging for troubleshooting any positioning issues
+
+## [0.1.62] - 2025-04-05
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Critical fixes for annotation selection and highlighting
+  - Fixed issue where highlight-pulse effect was incorrectly affecting the entire PDF
+  - Fixed annotation scrolling that would incorrectly scroll to the top of the document
+  - Improved highlighting to only target SVG elements with specific tag checks
+  - Enhanced scrolling algorithm with multiple fallback strategies
+  - Added requestAnimationFrame for smoother scrolling behavior
+  - Improved timing coordination between page changes and scrolling
+  - Added more detailed logging for easier troubleshooting
+
+## [0.1.61] - 2025-04-05
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Fixed annotation selection visual effects and scrolling
+  - Resolved issue where highlight-pulse effect was incorrectly applied to the entire PDF
+  - Replaced stroke-width manipulation with outline for more reliable highlighting
+  - Added better data attributes to all annotation types for reliable targeting
+  - Fixed scrolling algorithm to properly position selected annotations in viewport
+  - Added robust logging to help diagnose positioning issues
+  - Implemented separate timing for page change vs. same page selection
+  - Added multiple element targeting for more reliable highlighting
+
+## [0.1.60] - 2025-04-04
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Improved annotation selection scroll behavior
+  - Fixed issue where selecting annotations would scroll to the top of the document
+  - Enhanced scroll algorithm to position annotations at 30% from the top of the viewport
+  - Added visual pulse effect to highlight selected annotations
+  - Improved scroll targeting using actual page and annotation positions
+  - Optimized animation timing for better performance
+
+## [0.1.59] - 2025-04-04
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- Improved annotation deletion user experience
+  - AnnotationDetails dialog now automatically closes after confirming deletion
+  - Prevents users from having to manually close the dialog after deletion
+  - Creates a more streamlined workflow for annotation management
+- Enhanced scroll behavior when selecting annotations by ID
+  - Fixed issue where selectAnnotationById would scroll to the top of the page
+  - Improved accuracy of scrolling to specific annotations using actual page position
+  - Added visual highlighting effect to make selected annotations easier to locate
+  - Optimized annotation positioning to appear at 30% from the top of the viewport
+
+## [0.1.58] - 2025-04-04
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.57] - 2025-04-03
+
+### Added
+- 
+
+### Changed
+- Improved toolbar responsiveness for small screen sizes
+  - Redesigned ToolBar component with mobile-first approach
+  - Added collapsible menu for smaller screens with a hamburger toggle
+  - Essential controls (zoom and page navigation) stay visible on mobile screens
+  - Drawing tools are hidden in the expandable menu on mobile
+  - Enhanced ThicknessDropdown to be more responsive with adaptive layout
+  - Added optimized grid layout for dropdown options on mobile
+  - Simplified text labels and optimized spacing on smaller screens
+
+### Fixed
+- Fixed toolbar layout issues on smaller screen widths
+  - Removed UI clutter in narrow viewports through better component organization
+  - Implemented responsive breakpoints using Tailwind's responsive classes
+  - Added proper mobile styling for all toolbar components
+  - Fixed dropdown components to use full width on mobile and auto width on desktop
+
+## [0.1.56] - 2025-04-01
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.55] - 2025-04-01
+
+### Added
+- 
+
+### Changed
+- 
+
+### Fixed
+- 
+
+## [0.1.54] - 2024-03-22
+
+### Changed
+- Updated build dependencies to resolve deprecation warnings
+  - Updated rollup to v4.9.6
+  - Updated @rollup/plugin-node-resolve to v15.2.3
+  - Added resolutions for glob and inflight to use newer versions
+  - Improved build tooling stability and removed deprecated package warnings
+
+### Fixed
+- Resolved React peer dependency warnings
+  - Added React and React DOM to dependencies while maintaining them in devDependencies
+  - Ensures proper peer dependency satisfaction for react-icons and lucide-react
+  - Improves package installation and dependency resolution
+
 ## [0.1.53] - 2025-03-22
 
 ### Added
@@ -334,7 +659,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Major refactoring to improve type system
-  - Replaced `ENEMCategory` and `CategoryType` with `CategoryItem`
+  - Replaced `ENEMCategory` and `CategoryType` with `CompetenciaInterface`
   - Updated components to use the new type definitions
   - Enhanced custom categories support throughout the codebase
 - Improved project structure
@@ -350,7 +675,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed import path issues that were causing build failures
-- Enhanced type compatibility between `CustomCategory` and `CategoryItem`
+- Enhanced type compatibility between `CustomCategory` and `CompetenciaInterface`
 
 ## [0.1.30] - 2025-03-18
 

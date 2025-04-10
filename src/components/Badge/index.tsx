@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { TagInterface } from "../../types";
-
+import { TagInterface } from "lingapp-revisao-redacao";
 export const Badge = ({tag,idx}:{ tag:TagInterface, idx:number }) => {
   // Track which tag is being hovered
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   return (
-    <div className="flex flex-wrap max-w-md gap-2">
+    <div className="flex flex-wrap max-w-md gap-2"
+    key={idx}
+    >
         <div
-          key={idx}
           className="relative inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-200 rounded-md shadow-sm"
           style={{ 
             maxWidth: '260px',

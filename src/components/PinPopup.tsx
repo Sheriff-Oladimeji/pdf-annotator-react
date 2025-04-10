@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Point, TagInterface } from '../types';
+import { Point } from '../types';
+import { TagInterface } from 'lingapp-revisao-redacao';
 
 interface PinPopupProps {
   position: Point;
@@ -82,7 +83,7 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         <h3 className="text-base font-semibold">Adicionar Marcador</h3>
         <button 
           onClick={onCancel}
-          className="p-1 rounded-full hover:bg-gray-200 text-gray-500"
+          className="p-1 text-gray-500 rounded-full hover:bg-gray-200"
         >
           &times;
         </button>
@@ -92,13 +93,13 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         {/* Tag type selector */}
         {tagTypes.length > 0 && (
           <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
               Tipo de Problema:
             </label>
             <select
               value={selectedTagType}
               onChange={(e) => setSelectedTagType(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md text-sm"
+              className="w-full p-2 text-sm border border-gray-300 rounded-md"
             >
               {tagTypes.map((tipo) => (
                 <option key={tipo} value={tipo}>
@@ -112,10 +113,10 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         {/* Tag selection */}
         {selectedTagType && groupedTags[selectedTagType]?.length > 0 && (
           <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
               Selecionar Problemas:
             </label>
-            <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-gray-200 rounded-md">
+            <div className="flex flex-wrap gap-2 p-2 overflow-y-auto border border-gray-200 rounded-md max-h-40">
               {groupedTags[selectedTagType].map((tag) => (
                 <button
                   type="button"
@@ -137,14 +138,14 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         {/* Selected tags */}
         {selectedTags.length > 0 && (
           <div className="mb-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
               Problemas Selecionados:
             </label>
             <div className="flex flex-wrap gap-1 p-2 border border-gray-200 rounded-md bg-gray-50">
               {selectedTags.map((tag) => (
                 <div 
                   key={tag._id || `${tag.tipo}-${tag.tag}`}
-                  className="flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md"
+                  className="flex items-center px-2 py-1 text-xs text-blue-800 bg-blue-100 rounded-md"
                 >
                   <span className="mr-1">{tag.tag}</span>
                   <button
@@ -162,7 +163,7 @@ export const PinPopup: React.FC<PinPopupProps> = ({
         
         {/* Additional comments textarea */}
         <div className="mb-3">
-          <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="content" className="block mb-1 text-sm font-medium text-gray-700">
             Comentários Adicionais (Opcional):
           </label>
           <textarea
