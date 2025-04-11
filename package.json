@@ -1,6 +1,6 @@
 {
   "name": "pdf-annotator-react",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A React component library for PDF annotation",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",

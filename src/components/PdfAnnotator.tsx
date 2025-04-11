@@ -433,7 +433,9 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
           disableStream: false,
           disableAutoFetch: false,
           isEvalSupported: true,
-          enableXfa: true
+          enableXfa: true,
+          disableFontFace: false,
+          useSystemFonts: true
         });
         
         // Log when document loading starts
@@ -463,7 +465,51 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
         }
       } catch (error) {
         console.error('Error loading PDF document:', error);
-        // You might want to show an error message to the user here
+        
+        // More detailed error information
+        if (error instanceof Error) {
+          console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          });
+          
+          // Try loading with fallback options if the initial attempt failed
+          if (!loadingTask || loadingTask.destroyed) {
+            console.log('Attempting to load PDF with fallback options...');
+            try {
+              loadingTask = pdfjsLib.getDocument({
+                url: url,
+                cMapUrl: 'https://unpkg.com/pdfjs-dist@4.0.189/cmaps/',
+                cMapPacked: true,
+                disableRange: true,  // Try with range requests disabled
+                disableStream: true, // Try with streaming disabled
+                disableAutoFetch: true, // Disable auto-fetching
+                isEvalSupported: false, // Disable eval
+                enableXfa: false,    // Disable XFA
+                disableFontFace: true // Disable font face
+              });
+              
+              const pdfDoc = await loadingTask.promise;
+              
+              console.log('PDF document loaded successfully with fallback options');
+              
+              setPdfDocument(pdfDoc);
+              setNumPages(pdfDoc.numPages);
+              
+              if (fitToWidth) {
+                const fitScale = await calculateFitToWidthScale(pdfDoc);
+                setScale(fitScale);
+              }
+              
+              if (onDocumentLoadSuccess) {
+                onDocumentLoadSuccess(pdfDoc.numPages);
+              }
+            } catch (fallbackError) {
+              console.error('Error loading PDF document with fallback options:', fallbackError);
+            }
+          }
+        }
       }
     };
 

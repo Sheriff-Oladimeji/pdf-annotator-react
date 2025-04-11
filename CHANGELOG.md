@@ -5,6 +5,22 @@ All notable changes to the pdf-annotator-react package will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-04-11
+
+### Added
+- Enhanced canvas content verification to detect blank pages
+- Multiple rendering strategies with progressive fallbacks
+- Improved debugging information for PDF page rendering
+
+### Changed
+- Optimized rendering process to prevent black/blank screens
+- Enhanced error handling with detailed logging
+
+### Fixed
+- Fixed critical issue with PDFs displaying as black screens
+- Added explicit white background to canvas rendering
+- Implemented robust retry mechanism with different rendering options
+
 ## [0.4.0] - 2025-04-11
 
 ### Added

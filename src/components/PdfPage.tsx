@@ -91,6 +91,17 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         // Get the page
         const page = await pdfDocument.getPage(pageNumber);
         
+        // Log detailed page information for debugging
+        console.log(`Rendering PDF page ${pageNumber}:`, {
+          rotate: page.rotate,
+          pageIndex: page._pageIndex,
+          pageNumber: pageNumber,
+          ref: page.ref ? `${page.ref.num}R${page.ref.gen}` : 'none',
+          userUnit: page.userUnit,
+          attempt: renderAttempts + 1,
+          totalAttempts: maxRenderAttempts
+        });
+        
         // Store the original dimensions at scale 1.0
         const originalViewport = page.getViewport({ scale: 1.0 });
         setOriginalDimensions({
@@ -120,6 +131,10 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         
         if (!context) return;
         
+        // Set a white background before rendering to prevent the black screen issue
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
         // Clear the canvas before rendering
         context.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -127,16 +142,47 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         canvas.height = viewport.height;
         canvas.width = viewport.width;
         
+        // Fill with white again after resetting dimensions
+        context.fillStyle = 'white';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
         setPageHeight(viewport.height);
         setPageWidth(viewport.width);
         
         // Update canvas dimensions after setting canvas width/height
         updateCanvasDimensions();
         
+        // Get different rendering options based on the retry attempt
+        const getRenderOptions = (attempt: number) => {
+          if (attempt === 0) {
+            // First attempt: use WebGL and default settings
+            return {
+              enableWebGL: true,
+              background: 'rgba(255, 255, 255, 1)',
+              renderInteractiveForms: true
+            };
+          } else if (attempt === 1) {
+            // Second attempt: disable WebGL
+            return {
+              enableWebGL: false,
+              background: 'rgba(255, 255, 255, 1)',
+              renderInteractiveForms: true
+            };
+          } else {
+            // Third attempt: simplest render with no special features
+            return {
+              enableWebGL: false,
+              background: 'rgba(255, 255, 255, 1)',
+              renderInteractiveForms: false
+            };
+          }
+        };
+        
+        const renderOptions = getRenderOptions(renderAttempts);
         const renderContext = {
           canvasContext: context,
           viewport,
-          enableWebGL: renderAttempts > 0 ? false : true, // Try without WebGL if we're retrying
+          ...renderOptions
         };
         
         // Store the render task reference
@@ -147,10 +193,30 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         
         // If still mounted, mark as rendered
         if (isMounted) {
-          setIsRendered(true);
-          renderTaskRef.current = null;
-          // Reset render attempts on success
-          setRenderAttempts(0);
+          // Verify that content was actually rendered by checking canvas pixels
+          const hasContent = checkCanvasHasContent(canvas);
+          
+          if (hasContent) {
+            setIsRendered(true);
+            renderTaskRef.current = null;
+            // Reset render attempts on success
+            setRenderAttempts(0);
+          } else {
+            console.warn('Canvas appears to be blank after rendering, retrying...');
+            if (renderAttempts < maxRenderAttempts) {
+              setRenderAttempts(prev => prev + 1);
+              // Wait a brief moment before retrying
+              setTimeout(() => {
+                if (isMounted) {
+                  renderPage();
+                }
+              }, 500);
+            } else {
+              console.error('Max render attempts reached, canvas still appears blank');
+              setIsRendered(true); // Show annotations layer anyway
+              setRenderError('PDF may not be rendering correctly');
+            }
+          }
         }
       } catch (error) {
         // Handle rendering errors
@@ -328,6 +394,49 @@ export const PdfPage: React.FC<PdfPageProps> = ({
     // Use the getRelativeCoordinates function for consistency
     const point = getRelativeCoordinates(event);
     onCommentAdd(point, pageNumber - 1);
+  };
+
+  // Function to check if canvas has content (not just a blank/black screen)
+  const checkCanvasHasContent = (canvas: HTMLCanvasElement): boolean => {
+    try {
+      const context = canvas.getContext('2d');
+      if (!context) return false;
+      
+      // Sample pixels from different areas of the canvas
+      const samplePoints = [
+        { x: Math.floor(canvas.width * 0.25), y: Math.floor(canvas.height * 0.25) },
+        { x: Math.floor(canvas.width * 0.75), y: Math.floor(canvas.height * 0.25) },
+        { x: Math.floor(canvas.width * 0.5), y: Math.floor(canvas.height * 0.5) },
+        { x: Math.floor(canvas.width * 0.25), y: Math.floor(canvas.height * 0.75) },
+        { x: Math.floor(canvas.width * 0.75), y: Math.floor(canvas.height * 0.75) }
+      ];
+      
+      // Count non-white and non-black pixels
+      let nonBlankCount = 0;
+      
+      for (const point of samplePoints) {
+        if (point.x <= 0 || point.y <= 0 || point.x >= canvas.width || point.y >= canvas.height) {
+          continue; // Skip invalid points
+        }
+        
+        const pixel = context.getImageData(point.x, point.y, 1, 1).data;
+        
+        // Check if pixel is not white (255,255,255) and not black (0,0,0)
+        // Allow some tolerance for near-white and near-black
+        const isWhite = pixel[0] > 250 && pixel[1] > 250 && pixel[2] > 250;
+        const isBlack = pixel[0] < 5 && pixel[1] < 5 && pixel[2] < 5;
+        
+        if (!isWhite && !isBlack) {
+          nonBlankCount++;
+        }
+      }
+      
+      // If we have at least 1 non-blank pixel in our sample, consider the canvas to have content
+      return nonBlankCount > 0;
+    } catch (error) {
+      console.error('Error checking canvas content:', error);
+      return true; // Default to assuming content exists if check fails
+    }
   };
 
   return (
