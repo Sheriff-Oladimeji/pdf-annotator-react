@@ -136,8 +136,7 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         const renderContext = {
           canvasContext: context,
           viewport,
-          // Try rendering without WebGL first
-          enableWebGL: renderAttempts > 0 ? false : true,
+          enableWebGL: renderAttempts > 0 ? false : true, // Try without WebGL if we're retrying
         };
         
         // Store the render task reference
@@ -154,13 +153,13 @@ export const PdfPage: React.FC<PdfPageProps> = ({
           setRenderAttempts(0);
         }
       } catch (error) {
-        // Handle rendering cancelled exception specifically
+        // Handle rendering errors
         if (error instanceof Error) {
           console.warn('PDF rendering error:', error.message);
           setRenderError(error.message);
           
-          // If it's a rendering cancelled error and we haven't exceeded max attempts, retry
-          if (error.name === 'RenderingCancelledException' && renderAttempts < maxRenderAttempts) {
+          // If it's not a cancelled render and we haven't exceeded max attempts, retry
+          if (error.message !== 'Rendering cancelled' && renderAttempts < maxRenderAttempts) {
             if (isMounted) {
               // Increment attempts count
               setRenderAttempts(prev => prev + 1);
@@ -176,8 +175,6 @@ export const PdfPage: React.FC<PdfPageProps> = ({
             }
           } else if (renderAttempts >= maxRenderAttempts) {
             console.error('Max render attempts reached:', error);
-            // Still set rendered to true to allow annotation layer to appear
-            setIsRendered(true);
           }
         }
       }
@@ -195,7 +192,7 @@ export const PdfPage: React.FC<PdfPageProps> = ({
         renderTaskRef.current = null;
       }
     };
-  }, [pdfDocument, pageNumber, scale, forceRotation, updateCanvasDimensions, renderAttempts]);
+  }, [pdfDocument, pageNumber, scale, forceRotation, updateCanvasDimensions, renderAttempts, maxRenderAttempts]);
 
   // Add a useEffect to update coordinates on window resize
   useEffect(() => {
@@ -250,7 +247,6 @@ export const PdfPage: React.FC<PdfPageProps> = ({
     const boundedX = Math.max(0, Math.min(normalizedX, 1));
     const boundedY = Math.max(0, Math.min(normalizedY, 1));
     
-    // Store original scale with the point for debugging/reference
     return { 
       x: boundedX, 
       y: boundedY
@@ -324,29 +320,67 @@ export const PdfPage: React.FC<PdfPageProps> = ({
   };
 
   // Handle right-click for comment adding
-  // const handleContextMenu = (event: React.MouseEvent) => {
-  //   if (!onCommentAdd) return;
+  const handleContextMenu = (event: React.MouseEvent) => {
+    if (!onCommentAdd) return;
     
-  //   event.preventDefault();
+    event.preventDefault();
     
-  //   // Use the getRelativeCoordinates function for consistency
-  //   const point = getRelativeCoordinates(event);
-  //   onCommentAdd(point, pageNumber - 1);
-  // };
+    // Use the getRelativeCoordinates function for consistency
+    const point = getRelativeCoordinates(event);
+    onCommentAdd(point, pageNumber - 1);
+  };
 
   return (
     <div 
+      className="relative mb-8 bg-white shadow-xl rounded-sm border border-gray-300"
       ref={containerRef}
-      className="relative pdf-page"
-      style={{ margin: '0 auto', width: pageWidth, height: pageHeight }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onContextMenu={handleContextMenu}
+      style={{
+        // Add a subtle page curl effect with box-shadow
+        boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24), 0 10px 20px rgba(0,0,0,0.15)',
+        minHeight: pageHeight || 300,
+        minWidth: pageWidth || 200
+      }}
       data-page-number={pageNumber}
     >
+      <div className="absolute top-0 right-0 px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded-bl-md border-l border-b border-gray-300">
+        Page {pageNumber}
+      </div>
+      
+      {/* Loading indicator */}
+      {!isRendered && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80 z-10">
+          <div className="text-center">
+            {renderError && renderAttempts >= maxRenderAttempts ? (
+              <div>
+                <svg className="w-12 h-12 mx-auto text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="mt-2 text-red-600 font-medium">Failed to render PDF page</p>
+                <p className="mt-1 text-sm text-gray-600">Try refreshing the page or using a different browser.</p>
+              </div>
+            ) : (
+              <>
+                <div className="inline-block w-8 h-8 border-4 border-gray-300 border-t-gray-600 rounded-full animate-spin mb-2"></div>
+                <p className="text-sm text-gray-600">Loading page {pageNumber}...</p>
+                {renderAttempts > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">Retry attempt {renderAttempts}/{maxRenderAttempts}</p>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      
       <canvas
         ref={canvasRef}
-        className="pdf-canvas"
-        style={{ width: '100%', height: '100%' }}
+        className="block"
+        width={pageWidth || 1}
+        height={pageHeight || 1}
       />
-      
       {isRendered && (
         <AnnotationLayer
           annotations={annotations}
@@ -356,30 +390,14 @@ export const PdfPage: React.FC<PdfPageProps> = ({
           activeDrawingPoints={activeDrawingPoints}
           isDrawing={isDrawing}
           drawingColor={drawingColor}
+          drawingThickness={drawingThickness}
           selectedAnnotation={selectedAnnotation}
           currentMode={currentMode}
-          originalPageDimensions={originalDimensions}
-          viewportToNormalizedCoordinates={getRelativeCoordinates}
-          normalizedToViewportCoordinates={normalizedToViewportCoordinates}
+          startPoint={startPoint}
+          originalWidth={originalDimensions.width}
+          originalHeight={originalDimensions.height}
         />
       )}
-      
-      {renderError && renderAttempts >= maxRenderAttempts && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
-          <div className="p-4 text-center">
-            <p className="font-medium text-red-600">Error rendering PDF page.</p>
-            <p className="text-sm text-gray-600">Try refreshing the page or using a different browser.</p>
-          </div>
-        </div>
-      )}
-      
-      <div
-        className="absolute inset-0"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        style={{ touchAction: 'none' }} // Prevent default touch actions for better drawing
-      />
     </div>
   );
 }; 

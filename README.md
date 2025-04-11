@@ -13,8 +13,12 @@ A modern React component library for PDF annotation. This library allows you to 
   - Freehand drawing
   - Text notes
   - Comments
-- Customize annotation colors
+  - Pins with tags
+- Customize annotation colors and thicknesses
 - Get callbacks for annotation events (create, update, delete, select)
+- Responsive design with auto-fit to width option
+- Loading indicators with retry mechanism
+- View-only mode for read-only annotations
 - Modern React hooks-based API
 
 ## Installation
@@ -59,6 +63,7 @@ const MyPdfAnnotator = () => {
         onAnnotationUpdate={handleAnnotationUpdate}
         onAnnotationDelete={handleAnnotationDelete}
         annotationMode={AnnotationMode.HIGHLIGHT}
+        fitToWidth={true}
       />
     </div>
   );
@@ -105,6 +110,7 @@ const MyPdfAnnotator = () => {
       <button onClick={() => setMode(AnnotationMode.RECTANGLE)}>Rectangle</button>
       <button onClick={() => setMode(AnnotationMode.DRAWING)}>Draw</button>
       <button onClick={() => setMode(AnnotationMode.COMMENT)}>Comment</button>
+      <button onClick={() => setMode(AnnotationMode.PIN)}>Pin</button>
     </div>
   );
   
@@ -126,6 +132,8 @@ const MyPdfAnnotator = () => {
           underlineColor="rgba(0, 100, 255, 0.7)"
           rectangleColor="rgba(255, 0, 0, 0.3)"
           drawingColor="#22cc22"
+          defaultThickness={8}
+          fitToWidth={true}
         />
       </div>
     </div>
@@ -153,6 +161,7 @@ The `PdfAnnotator` component accepts the following props:
 | `onAnnotationUpdate` | function | Callback when an annotation is updated |
 | `onAnnotationDelete` | function | Callback when an annotation is deleted |
 | `onAnnotationSelect` | function | Callback when an annotation is selected |
+| `onAnnotationsChange` | function | Callback with full annotations array when any change occurs |
 | `highlightColor` | string | Custom color for highlight annotations |
 | `underlineColor` | string | Custom color for underline annotations |
 | `strikeoutColor` | string | Custom color for strikeout annotations |
@@ -160,6 +169,57 @@ The `PdfAnnotator` component accepts the following props:
 | `drawingColor` | string | Custom color for drawing annotations |
 | `textColor` | string | Custom color for text annotations |
 | `commentColor` | string | Custom color for comment annotations |
+| `pinColor` | string | Custom color for pin annotations |
+| `customCategories` | Array | Custom categories for annotations with colors |
+| `pdfWorkerSrc` | string | Custom PDF.js worker source URL |
+| `fitToWidth` | boolean | Whether to fit the PDF to the container width (default: true) |
+| `defaultThickness` | number | Default thickness for annotations like drawing (default: 8) |
+| `viewOnly` | boolean | Whether the component is in view-only mode (default: false) |
+
+## Ref API
+
+The `PdfAnnotator` component also exposes a ref API with the following methods:
+
+| Method | Description |
+|--------|-------------|
+| `getAnnotationsJSON()` | Returns a JSON string of all annotations |
+| `selectAnnotationById(id)` | Selects an annotation by ID and scrolls to it |
+
+```jsx
+import React, { useRef } from 'react';
+import { PdfAnnotator } from 'pdf-annotator-react';
+
+const MyComponent = () => {
+  const annotatorRef = useRef(null);
+  
+  const handleExport = () => {
+    const json = annotatorRef.current.getAnnotationsJSON();
+    console.log(json);
+  };
+  
+  const handleFind = () => {
+    annotatorRef.current.selectAnnotationById('some-annotation-id');
+  };
+  
+  return (
+    <>
+      <button onClick={handleExport}>Export Annotations</button>
+      <button onClick={handleFind}>Find Annotation</button>
+      <PdfAnnotator ref={annotatorRef} url="https://example.com/sample.pdf" />
+    </>
+  );
+};
+```
+
+## Recent Improvements
+
+- **Enhanced Loading States**: Added loading indicators with spinner animation when pages are loading
+- **Auto-Retry Mechanism**: Automatic retry system for failed PDF rendering with fallback to non-WebGL rendering
+- **Improved Annotation Selection**: Fixed coordinate transformation for more accurate annotation selection
+- **Better Error Handling**: Clear error messages when PDF rendering fails
+- **Responsive Design**: Added fit-to-width option and better handling of window resizing
+- **Support for Pin Annotations**: Added pins with tag support
+- **View-Only Mode**: Added support for read-only annotation viewing
 
 ## License
 
