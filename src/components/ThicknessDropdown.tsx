@@ -54,7 +54,7 @@ const ThicknessDropdown = ({ currentThickness, handleThicknessChange }: { curren
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-1">
-            {[4, 8, 12, 16].map(thickness => (
+            {[2, 4, 6, 8, 10, 12, 14, 16].map(thickness => (
               <button
                 key={thickness}
                 onClick={() => onSelectThickness(thickness)}

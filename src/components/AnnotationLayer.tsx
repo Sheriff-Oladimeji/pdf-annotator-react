@@ -121,9 +121,11 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
     // Fall back to default values if no thickness is provided
     switch (currentMode) {
       case AnnotationMode.DRAWING:
-        return 4;
+        return 2;
       case AnnotationMode.HIGHLIGHTING:
         return 10;
+      case AnnotationMode.STRIKEOUT:
+        return 2;
       case AnnotationMode.RECTANGLE:
         return 2;
       default:
