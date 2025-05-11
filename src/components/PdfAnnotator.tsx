@@ -154,6 +154,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     currentMode,
     drawingPoints,
     isDrawing,
+    startPoint,
+    pendingPencilAnnotation,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -162,6 +164,8 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     deleteAnnotation,
     selectAnnotation: hookSelectAnnotation,
     setMode,
+    validatePencilAnnotation,
+    cancelPencilAnnotation,
   } = useAnnotations({
     initialAnnotations: annotations,
     annotationMode,
@@ -554,7 +558,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     };
 
     // Add a small debounce to avoid too many recalculations during resize
-    let resizeTimeout: NodeJS.Timeout | null = null;
+    let resizeTimeout: number | null = null;
     
     const debouncedResize = () => {
       if (resizeTimeout) {
@@ -908,18 +912,21 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
             scale={scale}
             annotations={filteredAnnotations.filter(a => a.pageIndex === i - 1)}
             onAnnotationClick={handleAnnotationClick}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onCommentAdd={handleAddComment}
-            onTextClick={handleTextClick}
+            onPointerDown={!viewOnly ? handlePointerDown : undefined}
+            onPointerMove={!viewOnly ? handlePointerMove : undefined}
+            onPointerUp={!viewOnly ? handlePointerUp : undefined}
+            onCommentAdd={!viewOnly ? handleAddComment : undefined}
+            onTextClick={!viewOnly ? handleTextClick : undefined}
             activeDrawingPoints={drawingPoints}
             isDrawing={isDrawing}
             drawingColor={drawingColor}
             drawingThickness={annotationThickness}
             selectedAnnotation={selectedAnnotation}
             currentMode={currentMode}
-            startPoint={isDrawing ? drawingPoints[0] : null}
+            startPoint={startPoint}
+            pendingPencilAnnotation={pendingPencilAnnotation}
+            onValidatePencil={validatePencilAnnotation}
+            onCancelPencil={cancelPencilAnnotation}
           />
         );
       }

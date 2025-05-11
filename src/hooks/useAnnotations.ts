@@ -73,6 +73,11 @@ export const useAnnotations = ({
   const [drawingPoints, setDrawingPoints] = useState<Point[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState<Point | null>(null);
+  const [pendingPencilAnnotation, setPendingPencilAnnotation] = useState<{
+    points: Point[];
+    pageIndex: number;
+    rect: AnnotationRect;
+  } | null>(null);
 
   const getColor = useCallback(
     (type: AnnotationType): string => {
@@ -272,8 +277,19 @@ export const useAnnotations = ({
           pageIndex,
         };
         
-        createAnnotation(annotationType, rect, undefined, drawingPoints);
-        setDrawingPoints([]);
+        // Only immediately create annotation for highlighting, not for drawing (pencil)
+        if (annotationType === AnnotationType.HIGHLIGHTING) {
+          createAnnotation(annotationType, rect, undefined, drawingPoints);
+          setDrawingPoints([]);
+        } else if (annotationType === AnnotationType.DRAWING) {
+          // For pencil drawing, store as pending until the user confirms
+          setPendingPencilAnnotation({
+            points: [...drawingPoints],
+            pageIndex,
+            rect
+          });
+          // Keep the drawing points to display the pending annotation
+        }
       } else if (startPoint) {
         // Create annotation based on start and end points - using normalized coordinates
         const rect = calculateRectFromNormalizedPoints(startPoint, originalPoint, pageIndex);
@@ -288,6 +304,20 @@ export const useAnnotations = ({
     [currentMode, isDrawing, drawingPoints, startPoint, createAnnotation]
   );
 
+  const validatePencilAnnotation = useCallback(() => {
+    if (pendingPencilAnnotation) {
+      const { points, rect, pageIndex } = pendingPencilAnnotation;
+      createAnnotation(AnnotationType.DRAWING, rect, undefined, points);
+      setPendingPencilAnnotation(null);
+      setDrawingPoints([]);
+    }
+  }, [pendingPencilAnnotation, createAnnotation]);
+
+  const cancelPencilAnnotation = useCallback(() => {
+    setPendingPencilAnnotation(null);
+    setDrawingPoints([]);
+  }, []);
+
   return {
     annotations,
     selectedAnnotation,
@@ -295,6 +325,7 @@ export const useAnnotations = ({
     drawingPoints,
     isDrawing,
     startPoint,
+    pendingPencilAnnotation,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -303,5 +334,7 @@ export const useAnnotations = ({
     deleteAnnotation,
     selectAnnotation,
     setMode,
+    validatePencilAnnotation,
+    cancelPencilAnnotation,
   };
 };

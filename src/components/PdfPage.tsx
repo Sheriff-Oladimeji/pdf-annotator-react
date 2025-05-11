@@ -22,6 +22,9 @@ interface PdfPageProps {
   currentMode?: AnnotationMode;
   startPoint?: Point | null;
   forceRotation?: number;
+  pendingPencilAnnotation?: { points: Point[]; pageIndex: number } | null;
+  onValidatePencil?: () => void;
+  onCancelPencil?: () => void;
 }
 
 export const PdfPage: React.FC<PdfPageProps> = ({
@@ -43,6 +46,9 @@ export const PdfPage: React.FC<PdfPageProps> = ({
   currentMode = AnnotationMode.NONE,
   startPoint = null,
   forceRotation = null,
+  pendingPencilAnnotation = null,
+  onValidatePencil,
+  onCancelPencil,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -505,6 +511,9 @@ export const PdfPage: React.FC<PdfPageProps> = ({
           startPoint={startPoint}
           originalWidth={originalDimensions.width}
           originalHeight={originalDimensions.height}
+          pendingPencilAnnotation={pendingPencilAnnotation}
+          onValidatePencil={onValidatePencil}
+          onCancelPencil={onCancelPencil}
         />
       )}
     </div>

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Annotation, AnnotationType, Point, AnnotationMode } from '../types';
 import { pointsToSvgPath, calculateRectFromPoints } from '../utils';
 import { IoInformationCircle } from 'react-icons/io5';
-import { FaExclamationCircle } from 'react-icons/fa';
+import { FaExclamationCircle, FaCheck, FaTimes } from 'react-icons/fa';
 
 interface AnnotationLayerProps {
   annotations: Annotation[];
@@ -18,6 +18,9 @@ interface AnnotationLayerProps {
   startPoint?: Point | null;
   originalWidth?: number;
   originalHeight?: number;
+  pendingPencilAnnotation?: { points: Point[]; pageIndex: number } | null;
+  onValidatePencil?: () => void;
+  onCancelPencil?: () => void;
 }
 
 export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
@@ -34,6 +37,9 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   startPoint = null,
   originalWidth = 0,
   originalHeight = 0,
+  pendingPencilAnnotation = null,
+  onValidatePencil,
+  onCancelPencil,
 }) => {
   const pageAnnotations = useMemo(() => 
     annotations.filter(annotation => annotation.pageIndex === pageIndex)
@@ -137,17 +143,18 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   // Use original PDF dimensions for the viewBox to ensure correct scaling
   const viewBox = `0 0 ${originalWidth} ${originalHeight}`;
 
+  // Check if the pending pencil annotation is for this page
+  const hasPendingPencilForPage = pendingPencilAnnotation && pendingPencilAnnotation.pageIndex === pageIndex;
+
   return (
-    <div
-      className="absolute top-0 left-0 w-full h-full pointer-events-none"
-      style={{ transformOrigin: 'top left' }}
-    >
+    <div className="relative" style={{ width: '100%', height: '100%' }}>
       <svg
+        className="annotation-layer"
         width="100%"
         height="100%"
         viewBox={viewBox}
-        preserveAspectRatio="xMinYMin meet"
-        className="absolute top-0 left-0 pointer-events-none"
+        preserveAspectRatio="none"
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
       >
         {pageAnnotations.map((annotation) => {
           const { id, type, rect, color, points, thickness } = annotation;
@@ -393,6 +400,26 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
           />
         )}
       </svg>
+
+      {/* Pencil annotation validation UI */}
+      {hasPendingPencilForPage && onValidatePencil && onCancelPencil && (
+        <div className="absolute top-2 right-2 flex gap-2 p-2 bg-white bg-opacity-80 rounded-md shadow-md">
+          <button 
+            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+            onClick={onValidatePencil}
+            title="Confirm drawing"
+          >
+            <FaCheck size={16} />
+          </button>
+          <button 
+            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+            onClick={onCancelPencil}
+            title="Cancel drawing"
+          >
+            <FaTimes size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }; 
