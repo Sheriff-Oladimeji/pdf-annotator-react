@@ -1,6 +1,6 @@
 {
 	"name": "pdf-annotator-react",
-	"version": "0.4.9",
+	"version": "0.4.10",
 	"description": "A React component library for PDF annotation",
 	"main": "dist/index.cjs",
 	"module": "dist/index.mjs",
