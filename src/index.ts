@@ -9,6 +9,7 @@ export { AnnotationLayer } from './components/AnnotationLayer';
 export { ToolBar } from './components/ToolBar';
 export { AnnotationDetails } from './components/AnnotationDetails';
 export { CommentPopup } from './components/CommentPopup';
+export { SessionDebugger } from './components/SessionDebugger';
 
 // Hooks
 export { useAnnotations } from './hooks/useAnnotations';
@@ -21,7 +22,12 @@ export type {
   Annotation,
   AnnotationEventCallbacks,
   PDFAnnotatorProps,
+  AnnotationSession,
+  SessionControls,
 } from './types';
+
+// Re-export types from lingapp-revisao-redacao for convenience
+export type { CompetenciaInterface, CompetenciaWithTags, TagInterface } from 'lingapp-revisao-redacao';
 
 // Utils
 export {

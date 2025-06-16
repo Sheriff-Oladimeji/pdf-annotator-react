@@ -1,84 +1,96 @@
 {
-  "name": "pdf-annotator-react",
-  "version": "0.4.8",
-  "description": "A React component library for PDF annotation",
-  "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm run build",
-    "version:patch": "node scripts/increment-version.js patch",
-    "version:minor": "node scripts/increment-version.js minor",
-    "version:major": "node scripts/increment-version.js major",
-    "publish:patch": "npm run version:patch && npm run build && npm publish",
-    "publish:minor": "npm run version:minor && npm run build && npm publish",
-    "publish:major": "npm run version:major && npm run build && npm publish",
-    "deploy-local": "npm run build && npm pack"
-  },
-  "keywords": [
-    "react",
-    "pdf",
-    "annotator",
-    "annotations",
-    "pdf-annotator"
-  ],
-  "author": "Artur Oliveira <artur.o.gomes@gmail.com>",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/arturgomes/pdf-annotator-react.git"
-  },
-  "homepage": "https://github.com/arturgomes/pdf-annotator-react#readme",
-  "bugs": {
-    "url": "https://github.com/arturgomes/pdf-annotator-react/issues"
-  },
-  "license": "MIT",
-  "peerDependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "dependencies": {
-    "@types/uuid": "^10.0.0",
-    "lingapp-revisao-redacao": "^1.0.11",
-    "lucide-react": "^0.483.0",
-    "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^4.0.189",
-    "react-icons": "^5.5.0",
-    "tslib": "^2.8.1",
-    "uuid": "^11.1.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.22.15",
-    "@babel/preset-env": "^7.22.15",
-    "@babel/preset-react": "^7.22.15",
-    "@babel/preset-typescript": "^7.22.15",
-    "@rollup/plugin-babel": "^6.0.3",
-    "@rollup/plugin-commonjs": "^25.0.4",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@tailwindcss/postcss": "^4.0.14",
-    "@types/react": "^18.2.21",
-    "@types/react-dom": "^18.2.7",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.3",
-    "rollup": "^4.41.1",
-    "rollup-plugin-postcss": "^4.0.2",
-    "rollup-plugin-typescript2": "^0.35.0",
-    "tailwindcss": "^4.0.14",
-    "typescript": "^5.2.2"
-  },
-  "resolutions": {
-    "glob": "^8.1.0",
-    "inflight": "^1.0.6",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@types/react": "^18.2.21",
-    "@types/react-dom": "^18.2.7"
-  }
+	"name": "pdf-annotator-react",
+	"version": "0.4.9",
+	"description": "A React component library for PDF annotation",
+	"main": "dist/index.cjs",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "vite build",
+		"dev": "vite",
+		"test": "vitest",
+		"test:run": "vitest run",
+		"test:coverage": "vitest run --coverage",
+		"prepare": "npm run build",
+		"prepublishOnly": "npm run build",
+		"version:patch": "node scripts/increment-version.js patch",
+		"version:minor": "node scripts/increment-version.js minor",
+		"version:major": "node scripts/increment-version.js major",
+		"publish:patch": "npm run version:patch && npm run build && npm publish",
+		"publish:minor": "npm run version:minor && npm run build && npm publish",
+		"publish:major": "npm run version:major && npm run build && npm publish",
+		"deploy-local": "npm run build && npm pack"
+	},
+	"keywords": [
+		"react",
+		"pdf",
+		"annotator",
+		"annotations",
+		"pdf-annotator"
+	],
+	"author": "Artur Oliveira <artur.o.gomes@gmail.com>",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/arturgomes/pdf-annotator-react.git"
+	},
+	"homepage": "https://github.com/arturgomes/pdf-annotator-react#readme",
+	"bugs": {
+		"url": "https://github.com/arturgomes/pdf-annotator-react/issues"
+	},
+	"license": "MIT",
+	"peerDependencies": {
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0"
+	},
+	"dependencies": {
+		"@types/uuid": "^10.0.0",
+		"lingapp-revisao-redacao": "^1.0.11",
+		"lucide-react": "^0.483.0",
+		"pdf-lib": "^1.17.1",
+		"pdfjs-dist": "^4.0.189",
+		"react-icons": "^5.5.0",
+		"tslib": "^2.8.1",
+		"uuid": "^11.1.0",
+		"vite": "^6.3.5"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.22.15",
+		"@babel/preset-env": "^7.22.15",
+		"@babel/preset-react": "^7.22.15",
+		"@babel/preset-typescript": "^7.22.15",
+		"@rollup/plugin-babel": "^6.0.3",
+		"@rollup/plugin-commonjs": "^25.0.4",
+		"@rollup/plugin-node-resolve": "^15.2.3",
+		"@rollup/plugin-terser": "^0.4.4",
+		"@tailwindcss/postcss": "^4.0.14",
+		"@testing-library/dom": "^10.4.0",
+		"@testing-library/jest-dom": "^6.6.3",
+		"@testing-library/react": "^16.3.0",
+		"@testing-library/user-event": "^14.6.1",
+		"@types/react": "^18.2.21",
+		"@types/react-dom": "^18.2.7",
+		"@vitejs/plugin-react": "^4.5.2",
+		"autoprefixer": "^10.4.21",
+		"jsdom": "^26.1.0",
+		"postcss": "^8.5.3",
+		"rollup": "^4.41.1",
+		"rollup-plugin-postcss": "^4.0.2",
+		"rollup-plugin-typescript2": "^0.35.0",
+		"tailwindcss": "^4.0.14",
+		"typescript": "^5.2.2",
+		"vite-plugin-svgr": "^4.3.0",
+		"vite-tsconfig-paths": "^5.1.4",
+		"vitest": "^3.2.3"
+	},
+	"resolutions": {
+		"glob": "^8.1.0",
+		"inflight": "^1.0.6",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"@types/react": "^18.2.21",
+		"@types/react-dom": "^18.2.7"
+	}
 }

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { AnnotationLayer } from './AnnotationLayer';
-import { Annotation, Point, AnnotationMode } from '../types';
+import { Annotation, Point, AnnotationMode, AnnotationSession, SessionControls } from '../types';
 
 interface PdfPageProps {
   pdfDocument: pdfjsLib.PDFDocumentProxy;
@@ -23,6 +23,9 @@ interface PdfPageProps {
   startPoint?: Point | null;
   forceRotation?: number;
   activeDrawingStrokes?: Point[][];
+  annotationSession?: AnnotationSession;
+  sessionControls?: SessionControls;
+  showSessionControls?: boolean;
 }
 
 export const PdfPage: React.FC<PdfPageProps> = ({
@@ -45,6 +48,9 @@ export const PdfPage: React.FC<PdfPageProps> = ({
   startPoint = null,
   forceRotation = null,
   activeDrawingStrokes = [],
+  annotationSession,
+  sessionControls,
+  showSessionControls = true,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -508,6 +514,9 @@ export const PdfPage: React.FC<PdfPageProps> = ({
           originalWidth={originalDimensions.width}
           originalHeight={originalDimensions.height}
           activeDrawingStrokes={activeDrawingStrokes}
+          annotationSession={annotationSession}
+          sessionControls={sessionControls}
+          showSessionControls={showSessionControls}
         />
       )}
     </div>

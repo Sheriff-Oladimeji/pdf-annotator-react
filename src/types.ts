@@ -86,6 +86,8 @@ export type PDFAnnotatorProps = {
   fitToWidth?: boolean;
   defaultThickness?: number; // Default thickness for annotations
   viewOnly?: boolean; // Whether the component is in view-only mode (cannot edit annotations)
+  annotationSession?: AnnotationSession; // Session state for multi-stroke drawing
+  sessionControls?: SessionControls; // Controls for annotation sessions
 } & AnnotationEventCallbacks;
 
 export interface AnnotationSession {
