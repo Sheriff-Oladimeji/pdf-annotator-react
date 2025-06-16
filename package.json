@@ -1,16 +1,16 @@
 {
   "name": "pdf-annotator-react",
-  "version": "0.4.1",
+  "version": "0.4.8",
   "description": "A React component library for PDF annotation",
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
-  "types": "dist/types/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
+    "build": "vite build",
+    "dev": "vite",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build",
@@ -67,14 +67,14 @@
     "@types/react-dom": "^18.2.7",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
-    "rollup": "^4.9.6",
+    "rollup": "^4.41.1",
     "rollup-plugin-postcss": "^4.0.2",
     "rollup-plugin-typescript2": "^0.35.0",
     "tailwindcss": "^4.0.14",
     "typescript": "^5.2.2"
   },
   "resolutions": {
-    "glob": "^10.3.10",
+    "glob": "^8.1.0",
     "inflight": "^1.0.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

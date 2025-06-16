@@ -5,10 +5,12 @@ import { ToolBar } from './ToolBar';
 import { CommentPopup } from './CommentPopup';
 import { TextInputPopup } from './TextInputPopup';
 import { useAnnotations } from '../hooks/useAnnotations';
-import { PDFAnnotatorProps, Annotation, AnnotationMode, Point, AnnotationType } from '../types';
+import { PDFAnnotatorProps, Annotation, AnnotationMode, Point, AnnotationType, AnnotationRect } from '../types';
 import {TagInterface, CompetenciaInterface} from 'lingapp-revisao-redacao'
 import { AnnotationDetails } from './AnnotationDetails';
 import { annotationsToJSON } from '../utils';
+import CustomModal from '../../../../src/components/Modal';
+import { annotationModeToType } from '../utils';
 
 // Define a ref type for exposing methods
 export interface PdfAnnotatorRef {
@@ -70,6 +72,10 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
   );
   const [selectedAnnotation, setSelectedAnnotation] = useState<Annotation | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState<boolean>(false);
+  const [showDrawingModal, setShowDrawingModal] = useState(false);
+  const [pendingDrawingStrokes, setPendingDrawingStrokes] = useState<Point[][]>([]);
+  const [pendingDrawingType, setPendingDrawingType] = useState<AnnotationType | null>(null);
+  const [pendingDrawingRect, setPendingDrawingRect] = useState<AnnotationRect | null>(null);
   
   // Configure the PDF worker
   useEffect(() => {
@@ -152,7 +158,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     annotations: localAnnotations,
     selectedAnnotation: hookSelectedAnnotation,
     currentMode,
-    drawingPoints,
+    drawingStrokes,
     isDrawing,
     handlePointerDown,
     handlePointerMove,
@@ -162,6 +168,9 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     deleteAnnotation,
     selectAnnotation: hookSelectAnnotation,
     setMode,
+    setDrawingStrokes,
+    annotationSession,
+    sessionControls,
   } = useAnnotations({
     initialAnnotations: annotations,
     annotationMode,
@@ -554,7 +563,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     };
 
     // Add a small debounce to avoid too many recalculations during resize
-    let resizeTimeout: NodeJS.Timeout | null = null;
+    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
     
     const debouncedResize = () => {
       if (resizeTimeout) {
@@ -814,6 +823,46 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
     setAnnotationThickness(thickness);
   };
 
+  // Listen for new drawing strokes
+  useEffect(() => {
+    if ((currentMode === AnnotationMode.DRAWING || currentMode === AnnotationMode.HIGHLIGHTING) && drawingStrokes.length > 0 && !isDrawing) {
+      setPendingDrawingStrokes(drawingStrokes);
+      setPendingDrawingType(annotationModeToType(currentMode));
+      // Calculate bounding rect for all strokes
+      let minX = Number.MAX_VALUE, minY = Number.MAX_VALUE, maxX = Number.MIN_VALUE, maxY = Number.MIN_VALUE;
+      drawingStrokes.forEach(point => {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+      });
+      setPendingDrawingRect({ x: minX, y: minY, width: maxX - minX, height: maxY - minY, pageIndex: currentPage - 1 });
+      setShowDrawingModal(true);
+    }
+  }, [drawingStrokes, isDrawing, currentMode, currentPage]);
+
+  const handleDrawingModalSave = () => {
+    if (pendingDrawingType && pendingDrawingRect && pendingDrawingStrokes.length > 0) {
+      createAnnotation(pendingDrawingType, pendingDrawingRect, undefined, pendingDrawingStrokes);
+    }
+    setShowDrawingModal(false);
+    setPendingDrawingStrokes([]);
+    setPendingDrawingType(null);
+    setPendingDrawingRect(null);
+  };
+
+  const handleDrawingModalCancel = () => {
+    setShowDrawingModal(false);
+    setPendingDrawingStrokes([]);
+    setPendingDrawingType(null);
+    setPendingDrawingRect(null);
+  };
+
+  const handleContinueDrawing = () => {
+    setShowDrawingModal(false);
+    // Keep the strokes, allow user to add more
+  };
+
   const renderPages = () => {
     if (!pdfDocument) return null;
 
@@ -913,13 +962,14 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
             onPointerUp={handlePointerUp}
             onCommentAdd={handleAddComment}
             onTextClick={handleTextClick}
-            activeDrawingPoints={drawingPoints}
+            activeDrawingPoints={drawingStrokes}
             isDrawing={isDrawing}
             drawingColor={drawingColor}
             drawingThickness={annotationThickness}
             selectedAnnotation={selectedAnnotation}
             currentMode={currentMode}
-            startPoint={isDrawing ? drawingPoints[0] : null}
+            startPoint={isDrawing ? drawingStrokes[0] : null}
+            activeDrawingStrokes={showDrawingModal ? drawingStrokes : []}
           />
         );
       }
@@ -1093,11 +1143,40 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(({
 
       {/* Pin Popup */}
       {/* TODO: Add Pin Popup */}
+
+      {showDrawingModal && (
+        <CustomModal open={showDrawingModal} handleClose={handleDrawingModalCancel}>
+          <div className="flex flex-col items-center">
+            <h2 className="mb-2 font-bold">Preview Drawing</h2>
+            <div className="p-2 mb-4 border border-gray-200 bg-gray-50">
+              {/* Render a preview SVG of the drawing strokes */}
+              <svg width={300} height={200} style={{ background: '#fff' }}>
+                {pendingDrawingStrokes.map((stroke, idx) => (
+                  stroke.length > 1 ? (
+                    <polyline
+                      key={idx}
+                      points={stroke.map(p => `${p.x * 300},${p.y * 200}`).join(' ')}
+                      fill="none"
+                      stroke="#f00"
+                      strokeWidth={2}
+                    />
+                  ) : null
+                ))}
+              </svg>
+            </div>
+            <div className="flex gap-2">
+              <button className="px-4 py-2 text-white bg-blue-600 rounded" onClick={handleDrawingModalSave}>Salvar</button>
+              <button className="px-4 py-2 text-gray-800 bg-gray-300 rounded" onClick={handleDrawingModalCancel}>Cancelar</button>
+              <button className="px-4 py-2 text-white bg-green-600 rounded" onClick={handleContinueDrawing}>Continuar desenhando</button>
+            </div>
+          </div>
+        </CustomModal>
+      )}
     </div>
   );
 });
 
-// Helper function for getting annotations JSON without ref
+// Helper function to get annotations JSON without ref
 export const getAnnotationsJSON = (annotations: Annotation[]): string => {
   return annotationsToJSON(annotations);
 }; 

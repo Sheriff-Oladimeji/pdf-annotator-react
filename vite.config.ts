@@ -6,14 +6,19 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 export default defineConfig({
   plugins: [react(), svgr(), tsconfigPaths()],
   resolve: {
-    dedupe: ['react', 'react-dom'],
-    alias: {
-      // Ensure we're using the same React instance
-      'react': require.resolve('react'),
-      'react-dom': require.resolve('react-dom')
-    }
+    dedupe: ['react', 'react-dom']
   },
-  optimizeDeps: {
-    include: ['pdf-annotator-react']
-  }
+  build: {
+    lib: {
+      entry: 'src/index.ts',
+      name: 'PdfAnnotatorReact',
+      fileName: 'index',
+      formats: ['es', 'cjs'],
+    },
+    rollupOptions: {
+      external: ['react', 'react-dom', 'pdfjs-dist', 'pdf-lib'],
+    },
+    outDir: 'dist',
+    sourcemap: true,
+  },
 }); 

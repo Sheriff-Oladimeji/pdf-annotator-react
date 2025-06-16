@@ -32,7 +32,7 @@ export interface Annotation {
   pageIndex: number;
   color: string;
   content: string;
-  points?: Point[];
+  points?: Point[][];
   tags?: TagInterface[];
   createdAt: Date;
   updatedAt?: Date;
@@ -87,3 +87,19 @@ export type PDFAnnotatorProps = {
   defaultThickness?: number; // Default thickness for annotations
   viewOnly?: boolean; // Whether the component is in view-only mode (cannot edit annotations)
 } & AnnotationEventCallbacks;
+
+export interface AnnotationSession {
+  isActive: boolean;
+  strokes: Point[][];
+  currentStroke: Point[];
+  boundingBox: AnnotationRect | null;
+  pageIndex: number;
+  startTime: Date;
+}
+
+export interface SessionControls {
+  finalize: () => void;
+  cancel: () => void;
+  undoLastStroke: () => void;
+  addStroke: (points: Point[]) => void;
+}

@@ -22,6 +22,7 @@ interface PdfPageProps {
   currentMode?: AnnotationMode;
   startPoint?: Point | null;
   forceRotation?: number;
+  activeDrawingStrokes?: Point[][];
 }
 
 export const PdfPage: React.FC<PdfPageProps> = ({
@@ -43,6 +44,7 @@ export const PdfPage: React.FC<PdfPageProps> = ({
   currentMode = AnnotationMode.NONE,
   startPoint = null,
   forceRotation = null,
+  activeDrawingStrokes = [],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -505,6 +507,7 @@ export const PdfPage: React.FC<PdfPageProps> = ({
           startPoint={startPoint}
           originalWidth={originalDimensions.width}
           originalHeight={originalDimensions.height}
+          activeDrawingStrokes={activeDrawingStrokes}
         />
       )}
     </div>
