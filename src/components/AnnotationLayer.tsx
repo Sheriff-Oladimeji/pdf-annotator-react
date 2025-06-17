@@ -154,9 +154,11 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
     // Fall back to default values if no thickness is provided
     switch (currentMode) {
       case AnnotationMode.DRAWING:
-        return 4;
+        return 2;
       case AnnotationMode.HIGHLIGHTING:
         return 10;
+      case AnnotationMode.STRIKEOUT:
+        return 2;
       case AnnotationMode.RECTANGLE:
         return 2;
       default:
@@ -168,17 +170,21 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   // Use original PDF dimensions for the viewBox to ensure correct scaling
   const viewBox = `0 0 ${originalWidth} ${originalHeight}`;
 
+  // Check if the pending pencil annotation is for this page
+  const hasPendingPencilForPage = pendingPencilAnnotation && pendingPencilAnnotation.pageIndex === pageIndex;
+
   return (
     <div
       className="absolute top-0 left-0 w-full h-full pointer-events-none"
       style={{ transformOrigin: "top left" }}
     >
       <svg
+        className="annotation-layer"
         width="100%"
         height="100%"
         viewBox={viewBox}
-        preserveAspectRatio="xMinYMin meet"
-        className="absolute top-0 left-0 pointer-events-none"
+        preserveAspectRatio="none"
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
       >
         {pageAnnotations.map((annotation) => {
           const { id, type, rect, color, points, thickness } = annotation;
