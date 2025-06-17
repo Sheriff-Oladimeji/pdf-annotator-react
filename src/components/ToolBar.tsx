@@ -323,12 +323,12 @@ export const ToolBar: React.FC<ToolBarProps> = ({
 					</div>
 				)}
 
+						<span>teste</span>
 				{/* Desktop layout - hidden on small screens */}
 				<div className="hidden md:flex md:items-center md:space-x-4">
 					{/* Category selector dropdown */}
 					<div className="flex items-center space-x-4">
 						{renderCategorySelector()}
-
 						{/* Thickness selector - only show when in drawing, highlighting or rectangle mode */}
 						{!viewOnly && shouldShowThicknessSelector && (
 							<ThicknessDropdown

@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import { vi } from 'vitest'
 
 // Mock PDF.js
 global.URL.createObjectURL = vi.fn(() => 'mocked-url')

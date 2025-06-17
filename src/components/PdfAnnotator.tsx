@@ -1,29 +1,33 @@
-import React, {
-	useEffect,
-	useState,
-	useRef,
-	useImperativeHandle,
-	forwardRef,
-} from "react";
+import type {
+	CompetenciaInterface,
+	TagInterface,
+} from "lingapp-revisao-redacao";
 import * as pdfjsLib from "pdfjs-dist";
-import { PdfPage } from "./PdfPage";
-import { ToolBar } from "./ToolBar";
-import { CommentPopup } from "./CommentPopup";
-import { TextInputPopup } from "./TextInputPopup";
+import type React from "react";
+import {
+	forwardRef,
+	useEffect,
+	useImperativeHandle,
+	useRef,
+	useState,
+} from "react";
 import { useAnnotations } from "../hooks/useAnnotations";
 import {
-	PDFAnnotatorProps,
-	Annotation,
+	type Annotation,
 	AnnotationMode,
-	Point,
-	AnnotationType,
 	AnnotationRect,
+	AnnotationType,
+	type PDFAnnotatorProps,
+	type Point,
 } from "../types";
-import { TagInterface, CompetenciaInterface } from "lingapp-revisao-redacao";
-import { AnnotationDetails } from "./AnnotationDetails";
 import { annotationsToJSON } from "../utils";
 // CustomModal import removed - no longer needed for drawing modal
 import { annotationModeToType } from "../utils";
+import { AnnotationDetails } from "./AnnotationDetails";
+import { CommentPopup } from "./CommentPopup";
+import { PdfPage } from "./PdfPage";
+import { TextInputPopup } from "./TextInputPopup";
+import { ToolBar } from "./ToolBar";
 
 // Define a ref type for exposing methods
 export interface PdfAnnotatorRef {
@@ -374,17 +378,16 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(
 						document.removeEventListener("click", clickListener);
 					}
 				};
-			} else {
-				// Clean up any existing listeners when there's no selected annotation
-				if (container) {
-					container.removeEventListener("scroll", handleScroll);
-				}
-				if (clickListener) {
-					document.removeEventListener("click", clickListener);
-				}
-				return () => {};
 			}
-		}, [selectedAnnotation, selectAnnotation, currentMode, showDetailsDialog]);
+			// Clean up any existing listeners when there's no selected annotation
+			if (container) {
+				container.removeEventListener("scroll", handleScroll);
+			}
+			if (clickListener) {
+				document.removeEventListener("click", clickListener);
+			}
+			return () => {};
+		}, [selectedAnnotation, currentMode, showDetailsDialog]);
 
 		// Extracted scrollToAnnotation function for better organization and reusability
 		const scrollToAnnotation = (annotation: Annotation) => {
@@ -698,7 +701,7 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(
 					onAnnotationsChange(updatedAnnotations);
 				}
 			}
-		}, [currentCategory, localAnnotations]);
+		}, [currentCategory, localAnnotations, onAnnotationsChange]);
 
 		// When the annotation mode changes or we deselect an annotation, reset the position
 		useEffect(() => {
@@ -988,8 +991,9 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(
 							typeof a.category.competencia === "object"
 						) {
 							// Try to extract competencia from nested object if it exists
-							annotationCompetenciaId = (a.category.competencia as any)
-								.competencia;
+							annotationCompetenciaId = (
+								a.category.competencia as unknown as CompetenciaInterface
+							).competencia;
 						}
 
 						// Same for the selected category
@@ -1001,8 +1005,9 @@ export const PdfAnnotator = forwardRef<PdfAnnotatorRef, PDFAnnotatorProps>(
 							selectedCategory.competencia &&
 							typeof selectedCategory.competencia === "object"
 						) {
-							selectedCompetenciaId = (selectedCategory.competencia as any)
-								.competencia;
+							selectedCompetenciaId = (
+								selectedCategory.competencia as unknown as CompetenciaInterface
+							).competencia;
 						}
 
 						// Log the comparison for debugging
